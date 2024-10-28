@@ -17,14 +17,20 @@
 #include "CSCIx229.h"
 
 /* Global Variables */
-int th = -135; // Azimuth of view angle
 double dt = 0; // Time step
 int axes = 1; // Toggle axes
 
+/* Digital Elevation Model */
+float z[65][65];       //  DEM data
+float zmin=+1e8;       //  DEM lowest location
+float zmax=-1e8;       //  DEM highest location
+float zmag=1;          //  DEM magnification
+
 /* First Person Camera Settings */
+int th = -135; // Azimuth of view angle
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
-double dim = 4; // Size of world
+double dim = 500; // Size of world
 double E[3] = {1.5,1.5,1.5}; // Eye position for first person
 double C[3] = {0,-1.5,0}; // Camera position for first person
 
@@ -86,6 +92,55 @@ static void sphere(double x,double y,double z,double r) {
 }
 
 /*
+ *  Draw DEM Wireframe
+ *  Credit: Vlakkies
+ */
+void DEM() {
+    // Save transformation
+    glPushMatrix();
+    // Rotate from xy coordinates to xz coordinates
+    glRotated(-90, 1, 0, 0);
+
+	double z0 = (zmin+zmax)/2;
+	//  Show DEM wire frame
+	glColor3f(1,1,0);
+	for (int i=0;i<64;i++) {
+		for (int j=0;j<64;j++) {
+			float x=16*i-512;
+			float y=16*j-512;
+			glBegin(GL_LINE_LOOP);
+			glVertex3d(x+ 0,y+ 0,zmag*(z[i+0][j+0]-z0));
+			glVertex3d(x+16,y+ 0,zmag*(z[i+1][j+0]-z0));
+			glVertex3d(x+16,y+16,zmag*(z[i+1][j+1]-z0));
+			glVertex3d(x+ 0,y+16,zmag*(z[i+0][j+1]-z0));
+			glEnd();
+		}
+    }
+
+    // Undo transformations
+    glPopMatrix();
+}
+
+/*
+ *  Read Sample DEM from file
+ *  Credit: Vlakkies
+ */
+void ReadDEM(char* file) {
+   int i,j;
+   FILE* f = fopen(file,"r");
+   if (!f) Fatal("Cannot open file %s\n",file);
+   for (j=0;j<=64;j++)
+      for (i=0;i<=64;i++)
+      {
+         if (fscanf(f,"%f",&z[i][j])!=1) Fatal("Error reading saddleback.dem\n");
+         if (z[i][j] < zmin) zmin = z[i][j];
+         if (z[i][j] > zmax) zmax = z[i][j];
+      }
+   fclose(f);
+}
+
+
+/*
  *  OpenGL (GLUT) calls this routine to display the scene
  */
 void display() {
@@ -131,9 +186,13 @@ void display() {
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
+    // Draw Digital Elevation Models
+    DEM();
+
+    //  Draw axes
     glColor3f(1,1,1);
     if (axes) {
-        const double len=1;
+        const double len=dim/2;
         glBegin(GL_LINES);
         glVertex3d(0,0,0);
         glVertex3d(len,0,0);
@@ -209,7 +268,7 @@ void key(unsigned char ch,int x,int y) {
             // Camera position for first person
             C[0] = 0; C[1] = -1.5; C[2] = 0;
             break;
-        // Toggle axes
+        // Toggle axes TODO: Remove in final product
         case 'x':
         case 'X':
             axes = !axes;
@@ -247,14 +306,14 @@ void key(unsigned char ch,int x,int y) {
         // Move up
         case 'q':
         case 'Q':
-            E[1] += df;
-            C[1] += df;
+            E[1] += df*dim;
+            C[1] += df*dim;
             break;
         // Move down
         case 'e':
         case 'E':
-            E[1] -= df;
-            C[1] -= df;
+            E[1] -= df*dim;
+            C[1] -= df*dim;
             break;
 
         /* Lighting Controls */
@@ -342,7 +401,8 @@ int main(int argc,char* argv[]) {
 //    glutMouseFunc(mouse);
 //    glutMotionFunc(motion);
     //  TODO: Load textures
-    //  TODO: Load DEMs
+    // Load DEMs
+    ReadDEM("saddleback.dem");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
