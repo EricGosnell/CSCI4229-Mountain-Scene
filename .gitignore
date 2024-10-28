@@ -1,0 +1,8 @@
+cmake-build-debug
+CMakeLists.txt
+.vscode
+.idea
+*.o
+*.a
+*.exe
+main
