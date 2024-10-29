@@ -30,8 +30,6 @@ DEM_1_arc n39w107 = {.resolution=24,
 					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
 					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
 
-
-
 float ymag = 2; // DEM vertical magnification
 
 /* First Person Camera Settings */
@@ -48,20 +46,27 @@ double C[3] = {0,0,0}; // Camera position for first person
 void drawDEM_1_arc(DEM_1_arc* dem) {
     const float dimension = sizeof(dem->data[0])/sizeof(float);
     const int y_norm = 3000; // Rough average elevation
+    const int inc = 5; // Factor to reduce resolution by
     // Save transformation
     glPushMatrix();
 
 	//  Draw DEM Points
     glPointSize(1);
-	for (int i=0;i<dimension-1;i+=10) {
-		for (int j=0;j<dimension-1;j+=10) {
+	for (int i=0;i<dimension/2-1;i+=inc) {
+		for (int j=0;j<dimension/2-1;j+=inc) {
             glColor3f(1,0,1);
 			float x = dem->pos[0] + dem->resolution*i; // Latitude
 			float z = dem->pos[1] - dem->resolution*j; // Longitude
-            glBegin(GL_POINTS);
-//            if (dem->data[i][j] > 4000) glColor3f(1,1,0);
+//            glBegin(GL_POINTS);
+////            if (dem->data[i][j] > 4000) glColor3f(1,1,0);
+//            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
+//            glEnd();
+            glBegin(GL_QUAD_STRIP);
             glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
-            glEnd();
+            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z);
+            glVertex3f(x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc));
+            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc));
+			glEnd();
 		}
     }
 
