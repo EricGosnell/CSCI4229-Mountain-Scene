@@ -21,18 +21,26 @@ double dt = 0; // Time step
 int axes = 1; // Toggle axes
 
 /* Digital Elevation Model */
-float z[65][65];       //  DEM data
-float zmin=+1e8;       //  DEM lowest location
-float zmax=-1e8;       //  DEM highest location
-float zmag=1;          //  DEM magnification
+typedef struct {
+    float data[3612][3612]; // Elevation Data
+    float pos[2]; // Top left corner latitude and longitude
+    const float resolution; // 1 arc-second = 24 meters
+} DEM_1_arc;
+DEM_1_arc n39w107 = {.resolution=24,
+					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
+					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
+
+
+
+float ymag = 2; // DEM vertical magnification
 
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
-double dim = 500; // Size of world
-double E[3] = {1.5,1.5,1.5}; // Eye position for first person
-double C[3] = {0,-1.5,0}; // Camera position for first person
+double dim = 50000; // Size of world
+double E[3]; // Eye position for first person
+double C[3] = {0,0,0}; // Camera position for first person
 
 /* Lighting Values */
 int distance    = 4;    // Light distance
@@ -93,27 +101,24 @@ static void sphere(double x,double y,double z,double r) {
 
 /*
  *  Draw DEM Wireframe
- *  Credit: Vlakkies
  */
-void DEM() {
+void drawDEM_1_arc(DEM_1_arc* dem) {
+    const float dimension = sizeof(dem->data[0])/sizeof(float);
+    const int y_norm = 3000; // Rough average elevation
     // Save transformation
     glPushMatrix();
-    // Rotate from xy coordinates to xz coordinates
-    glRotated(-90, 1, 0, 0);
 
-	double z0 = (zmin+zmax)/2;
-	//  Show DEM wire frame
-	glColor3f(1,1,0);
-	for (int i=0;i<64;i++) {
-		for (int j=0;j<64;j++) {
-			float x=16*i-512;
-			float y=16*j-512;
-			glBegin(GL_LINE_LOOP);
-			glVertex3d(x+ 0,y+ 0,zmag*(z[i+0][j+0]-z0));
-			glVertex3d(x+16,y+ 0,zmag*(z[i+1][j+0]-z0));
-			glVertex3d(x+16,y+16,zmag*(z[i+1][j+1]-z0));
-			glVertex3d(x+ 0,y+16,zmag*(z[i+0][j+1]-z0));
-			glEnd();
+	//  Draw DEM Points
+    glPointSize(1);
+	for (int i=0;i<dimension-1;i+=10) {
+		for (int j=0;j<dimension-1;j+=10) {
+            glColor3f(1,0,1);
+			float x = dem->pos[0] + dem->resolution*i; // Latitude
+			float z = dem->pos[1] - dem->resolution*j; // Longitude
+            glBegin(GL_POINTS);
+//            if (dem->data[i][j] > 4000) glColor3f(1,1,0);
+            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
+            glEnd();
 		}
     }
 
@@ -122,20 +127,18 @@ void DEM() {
 }
 
 /*
- *  Read Sample DEM from file
- *  Credit: Vlakkies
+ *  Read DEM from file
  */
-void ReadDEM(char* file) {
+void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
+   const float dimension = sizeof(dem->data[0])/sizeof(float);
    int i,j;
    FILE* f = fopen(file,"r");
    if (!f) Fatal("Cannot open file %s\n",file);
-   for (j=0;j<=64;j++)
-      for (i=0;i<=64;i++)
-      {
-         if (fscanf(f,"%f",&z[i][j])!=1) Fatal("Error reading saddleback.dem\n");
-         if (z[i][j] < zmin) zmin = z[i][j];
-         if (z[i][j] > zmax) zmax = z[i][j];
+   for (j=0; j<dimension; j++) {
+      for (i=0; i<dimension; i++) {
+         if (fscanf(f,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file);
       }
+    }
    fclose(f);
 }
 
@@ -187,7 +190,7 @@ void display() {
     /* Draw axes */
     glDisable(GL_LIGHTING);
     // Draw Digital Elevation Models
-    DEM();
+    drawDEM_1_arc(&n39w107);
 
     //  Draw axes
     glColor3f(1,1,1);
@@ -381,6 +384,10 @@ static void idle(void) {
  *  Start up GLUT and tell it what to do
  */
 int main(int argc,char* argv[]) {
+    // Set camera position
+    E[0] = 0.66*dim;
+    E[1] = 0.85*dim;
+    E[2] = 0.66*dim;
     //  Initialize GLUT
     glutInit(&argc,argv);
     //  Request double buffered, true color window with Z buffering at 600x600
@@ -402,7 +409,8 @@ int main(int argc,char* argv[]) {
 //    glutMotionFunc(motion);
     //  TODO: Load textures
     // Load DEMs
-    ReadDEM("saddleback.dem");
+    ReadDEM_1_arc("n39w107_1a_c.dem",&n39w107);
+
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
