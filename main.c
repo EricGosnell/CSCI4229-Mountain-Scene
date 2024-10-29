@@ -28,6 +28,63 @@ double dim = 4; // Size of world
 double E[3] = {1.5,1.5,1.5}; // Eye position for first person
 double C[3] = {0,-1.5,0}; // Camera position for first person
 
+/* Lighting Values */
+int distance    = 4;    // Light distance
+int ambient     = 35;   // Ambient intensity (%)
+int diffuse     = 35;   // Diffuse intensity (%)
+int specular    = 15;   // Specular intensity (%)
+int emission    = 100;    // Emission intensity (%)
+float shiny     = 1;    // Shininess (value)
+int l_th        = 90;   // Light azimuth
+float l_ph      = 2;    // Elevation of light
+
+/*
+ *  Draw vertex in polar coordinates with normal
+ *  Credit: Vlakkies
+ */
+static void Vertex(double th,double ph) {
+   double x = Sin(th)*Cos(ph);
+   double y = Cos(th)*Cos(ph);
+   double z =         Sin(ph);
+   //  For a sphere at the origin, the position
+   //  and normal vectors are the same
+   glNormal3d(x,y,z);
+   glVertex3d(x,y,z);
+}
+
+/*
+ *  Draw a sphere
+ *     at (x,y,z)
+ *     radius (r)
+ *  Credit: Vlakkies
+ */
+static void sphere(double x,double y,double z,double r) {
+   const int inc = 15;
+   //  Save transformation
+   glPushMatrix();
+   //  Offset, scale and rotate
+   glTranslated(x,y,z);
+   glScaled(r,r,r);
+   //  White ball with yellow specular
+   float yellow[]   = {1.0,1.0,0.0,1.0};
+   float Emission[] = {0.0,0.0,0.01*emission,1.0};
+   glColor3f(1,1,1);
+   glMaterialf(GL_FRONT,GL_SHININESS,shiny);
+   glMaterialfv(GL_FRONT,GL_SPECULAR,yellow);
+   glMaterialfv(GL_FRONT,GL_EMISSION,Emission);
+   //  Bands of latitude
+   for (int ph=-90;ph<90;ph+=inc) {
+      glBegin(GL_QUAD_STRIP);
+      for (int th=0;th<=360;th+=2*inc) {
+         Vertex(th,ph);
+         Vertex(th,ph+inc);
+      }
+      glEnd();
+   }
+   //  Undo transofrmations
+   glPopMatrix();
+}
+
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
  */
@@ -44,7 +101,36 @@ void display() {
     C[2] = E[2] + dim*sin(th*3.1415926/180); // Fz = Cz - Ez = sin(th)
     gluLookAt(E[0],E[1],E[2], C[0],C[1],C[2], 0,1,0);
 
-    //  Draw axes
+    /* Set lighting values and create light source */
+    glShadeModel(GL_SMOOTH);
+    //  Translate intensity to color vectors
+    float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
+    float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
+    float Specular[]  = {0.01*specular,0.01*specular,0.01*specular,1.0};
+    //  Light position
+    float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
+    //  Draw light position as ball (still no lighting here)
+    glColor3f(1,1,1);
+    sphere(Position[0],Position[1],Position[2], 0.1);
+    //  OpenGL should normalize normal vectors
+    glEnable(GL_NORMALIZE);
+    //  Enable lighting
+    glEnable(GL_LIGHTING);
+    //  Location of viewer for specular calculations
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,1); // Local = True
+    //  glColor sets ambient and diffuse color materials
+    glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    //  Enable light 0
+    glEnable(GL_LIGHT0);
+    //  Set ambient, diffuse, specular components and position of light 0
+    glLightfv(GL_LIGHT0,GL_AMBIENT ,Ambient);
+    glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
+    glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
+    glLightfv(GL_LIGHT0,GL_POSITION,Position);
+
+    /* Draw axes */
+    glDisable(GL_LIGHTING);
     glColor3f(1,1,1);
     if (axes) {
         const double len=1;
@@ -101,7 +187,7 @@ void special(int key,int x,int y) {
     //  Keep angles to +/-360 degrees
     th %= 360;
     //  Update projection
-    Project(60,asp,dim);
+    Project(fov,asp,dim);
     //  Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
 }
@@ -170,9 +256,43 @@ void key(unsigned char ch,int x,int y) {
             E[1] -= df;
             C[1] -= df;
             break;
+
+        /* Lighting Controls */
+        // Increase ambient light
+        case '1':
+            if (ambient < 100) ambient += 5;
+            break;
+        // Decrease ambient light
+        case '!':
+            if (ambient > 0) ambient -= 5;
+            break;
+        // Increase diffuse light
+        case '2':
+            if (diffuse < 100) diffuse += 5;
+            break;
+        // Decrease diffuse light
+        case '@':
+            if (diffuse > 0) diffuse -= 5;
+            break;
+        // Increase specular light
+        case '3':
+            if (specular < 100) specular += 5;
+            break;
+        // Decrease specular light
+        case '#':
+            if (specular > 0) specular -= 5;
+            break;
+        // Increase light elevation
+        case ']':
+            l_ph += 0.1;
+            break;
+        // Increase light elevation
+        case '[':
+            l_ph -= 0.1;
+            break;
     }
     //  Reproject
-    Project(60,asp,dim);
+    Project(fov,asp,dim);
     //  Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
 }
@@ -192,6 +312,7 @@ void reshape(int width,int height) {
 static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
+    l_th = fmod(t*90,360);
 
     // Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
