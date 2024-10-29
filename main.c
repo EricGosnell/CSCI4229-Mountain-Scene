@@ -19,6 +19,7 @@
 /* Global Variables */
 double dt = 0; // Time step
 int axes = 1; // Toggle axes
+typedef struct {float x,y,z;} vtx;
 
 /* Digital Elevation Model */
 typedef struct {
@@ -29,7 +30,6 @@ typedef struct {
 DEM_1_arc n39w107 = {.resolution=24,
 					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
 					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
-
 float ymag = 2; // DEM vertical magnification
 
 /* First Person Camera Settings */
@@ -41,14 +41,14 @@ double E[3]; // Eye position for first person
 double C[3] = {0,0,0}; // Camera position for first person
 
 /* Lighting Values */
-int distance    = 4;    // Light distance
+int distance;    		// Light distance
 int ambient     = 35;   // Ambient intensity (%)
 int diffuse     = 35;   // Diffuse intensity (%)
 int specular    = 15;   // Specular intensity (%)
-int emission    = 100;    // Emission intensity (%)
+int emission    = 100;  // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
-float l_ph      = 2;    // Elevation of light
+float l_ph;    			// Elevation of light
 
 /*
  *  Draw vertex in polar coordinates with normal
@@ -62,6 +62,23 @@ static void Vertex(double th,double ph) {
    //  and normal vectors are the same
    glNormal3d(x,y,z);
    glVertex3d(x,y,z);
+}
+
+/*
+ * Draw a triangle
+ */
+static void triangle(vtx A, vtx B, vtx C) {
+    //  Normal vector
+    float Nx = (A.y-B.y)*(C.z-A.z) - (C.y-A.y)*(A.z-B.z);
+    float Ny = (A.z-B.z)*(C.x-A.x) - (C.z-A.z)*(A.x-B.x);
+    float Nz = (A.x-B.x)*(C.y-A.y) - (C.x-A.x)*(A.y-B.y);
+    //  Draw triangle
+    glNormal3f(Nx,Ny,Nz);
+    glBegin(GL_TRIANGLES);
+        glVertex3f(A.x,A.y,A.z);
+        glVertex3f(B.x,B.y,B.z);
+        glVertex3f(C.x,C.y,C.z);
+    glEnd();
 }
 
 /*
@@ -109,8 +126,8 @@ void drawDEM_1_arc(DEM_1_arc* dem) {
 
 	//  Draw DEM Points
     glPointSize(1);
-	for (int i=0;i<dimension/2-1;i+=inc) {
-		for (int j=0;j<dimension/2-1;j+=inc) {
+	for (int i=dimension/4;i<3*dimension/4-1;i+=inc) {
+		for (int j=dimension/4;j<3*dimension/4-1;j+=inc) {
             glColor3f(1,0,1);
 			float x = dem->pos[0] + dem->resolution*i; // Latitude
 			float z = dem->pos[1] - dem->resolution*j; // Longitude
@@ -118,12 +135,18 @@ void drawDEM_1_arc(DEM_1_arc* dem) {
 ////            if (dem->data[i][j] > 4000) glColor3f(1,1,0);
 //            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
 //            glEnd();
-            glBegin(GL_QUAD_STRIP);
-            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
-            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z);
-            glVertex3f(x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc));
-            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc));
-			glEnd();
+//            glBegin(GL_QUAD_STRIP);
+//            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
+//            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z);
+//            glVertex3f(x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc));
+//            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc));
+//			glEnd();
+            vtx A = {x,ymag*dem->data[i][j]-y_norm,-z};
+            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z};
+            vtx C = {x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc)};
+            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc)};
+            triangle(A,B,C);
+            triangle(C,B,D);
 		}
     }
 
@@ -174,7 +197,7 @@ void display() {
     float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
     //  Draw light position as ball (still no lighting here)
     glColor3f(1,1,1);
-    sphere(Position[0],Position[1],Position[2], 0.1);
+    sphere(Position[0],Position[1],Position[2], 0.01*dim);
     //  OpenGL should normalize normal vectors
     glEnable(GL_NORMALIZE);
     //  Enable lighting
@@ -192,12 +215,11 @@ void display() {
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
-    /* Draw axes */
-    glDisable(GL_LIGHTING);
-    // Draw Digital Elevation Models
+    /* Draw Digital Elevation Models */
     drawDEM_1_arc(&n39w107);
 
-    //  Draw axes
+    /* Draw axes */
+    glDisable(GL_LIGHTING);
     glColor3f(1,1,1);
     if (axes) {
         const double len=dim/2;
@@ -351,11 +373,11 @@ void key(unsigned char ch,int x,int y) {
             break;
         // Increase light elevation
         case ']':
-            l_ph += 0.1;
+            l_ph += 0.01*dim;
             break;
         // Increase light elevation
         case '[':
-            l_ph -= 0.1;
+            l_ph -= 0.01*dim;
             break;
     }
     //  Reproject
@@ -393,6 +415,9 @@ int main(int argc,char* argv[]) {
     E[0] = 0.66*dim;
     E[1] = 0.85*dim;
     E[2] = 0.66*dim;
+    // Set light source position
+    l_ph = 0.5*dim;
+    distance = 0.5*dim;
     //  Initialize GLUT
     glutInit(&argc,argv);
     //  Request double buffered, true color window with Z buffering at 600x600
