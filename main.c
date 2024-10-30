@@ -32,18 +32,6 @@ DEM_1_arc n39w107 = {.resolution=24,
 					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
 float ymag = 2; // DEM vertical magnification
 
-/* Digital Elevation Model */
-typedef struct {
-    float data[3612][3612]; // Elevation Data
-    float pos[2]; // Top left corner latitude and longitude
-    const float resolution; // 1 arc-second = 24 meters
-} DEM_1_arc;
-DEM_1_arc n39w107 = {.resolution=24,
-					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
-					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
-
-float ymag = 2; // DEM vertical magnification
-
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
 int fov = 60; // Field of view
