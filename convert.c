@@ -2,8 +2,9 @@
  * Eric Gosnell
  *
  * Digital Elevation Models are available for download from the USGS 3DEP Progam. https://apps.nationalmap.gov/downloader/
+ * Multiple DEM's can be combined and cropped using ArcGIS Pro.
  * These DEM's were processed into readable text file using GDAL. https://gdal.org/en/latest/index.html.
- * The command <gdal_translate -of XYZ input.dem output.dem>. This produces a file with grid_size^2 rows each containing
+ * The command <gdal_translate -of XYZ input.tif output.dem>. This produces a file with grid_size^2 rows each containing
  * latitude and longitude in decimal degrees, and elevation in meters.
  *
  * This file processes this format to produce grid_size rows containing grid_size elevations in meters.
@@ -11,6 +12,7 @@
  * manually added to the corresponding DEM struct.
  * 
  * Usage: ./convert <input_file.dem> <output_file.dem> <grid_size>
+// TODO: dynamic array of outputs files. must be a power of 2 corresponding to number of subdivisions
  */
 
 #include <stdio.h>

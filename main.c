@@ -30,13 +30,21 @@ typedef struct {
 DEM_1_arc n39w107 = {.resolution=24,
 					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
 					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
-float ymag = 2; // DEM vertical magnification
+typedef struct {
+    float data[6178][6178]; // Elevation Data
+    float pos[2]; // Top left corner UTM coordinate
+    const float resolution; // 1 meter
+} DEM_1m;
+DEM_1m gore_range = {.resolution=1,
+					 .pos[0] = 383807,
+					 .pos[1] = 4404735}; // 1 meter DEM starting at UTM 13 x383807 y4404735
+float ymag = 1.5; // DEM vertical magnification
 
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
-double dim = 50000; // Size of world
+double dim = 1000; // Size of world
 double E[3]; // Eye position for first person
 double C[3] = {0,0,0}; // Camera position for first person
 
@@ -115,32 +123,24 @@ static void sphere(double x,double y,double z,double r) {
 }
 
 /*
- *  Draw DEM Wireframe
+ *  Draw 1 arc-second DEM Wireframe
  */
-void drawDEM_1_arc(DEM_1_arc* dem) {
+void drawDEM_1_arc(DEM_1_arc* dem, double scale) {
     const float dimension = sizeof(dem->data[0])/sizeof(float);
-    const int y_norm = 3000; // Rough average elevation
-    const int inc = 5; // Factor to reduce resolution by
+    const int y_norm = 3000; // Rough average elevation in meters
+    const int inc = 1; // Factor to reduce resolution by
     // Save transformation
     glPushMatrix();
+    // Scale
+    glScaled(scale,scale,scale);
 
-	//  Draw DEM Points
-    glPointSize(1);
-	for (int i=dimension/4;i<3*dimension/4-1;i+=inc) {
-		for (int j=dimension/4;j<3*dimension/4-1;j+=inc) {
+	//  Draw DEM Triangles
+	for (int i=7*dimension/16;i<9*dimension/16-1;i+=inc) {
+		for (int j=7*dimension/16;j<9*dimension/16-1;j+=inc) {
             glColor3f(1,0,1);
 			float x = dem->pos[0] + dem->resolution*i; // Latitude
 			float z = dem->pos[1] - dem->resolution*j; // Longitude
-//            glBegin(GL_POINTS);
-////            if (dem->data[i][j] > 4000) glColor3f(1,1,0);
-//            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
-//            glEnd();
-//            glBegin(GL_QUAD_STRIP);
-//            glVertex3f(x,ymag*dem->data[i][j]-y_norm,-z);
-//            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z);
-//            glVertex3f(x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc));
-//            glVertex3f(x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc));
-//			glEnd();
+//            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
             vtx A = {x,ymag*dem->data[i][j]-y_norm,-z};
             vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z};
             vtx C = {x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc)};
@@ -155,7 +155,7 @@ void drawDEM_1_arc(DEM_1_arc* dem) {
 }
 
 /*
- *  Read DEM from file
+ *  Read 1 arc-second DEM from file
  */
 void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
    const float dimension = sizeof(dem->data[0])/sizeof(float);
@@ -168,6 +168,68 @@ void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
       }
     }
    fclose(f);
+}
+
+/*
+ *  Draw 1 meter DEM Wireframe
+ */
+void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
+    const float dimension = sizeof(dem->data[0])/sizeof(float);
+    const int inc = 10; // Factor to reduce resolution by
+    // Save transformation
+    glPushMatrix();
+    // Translate and Scale
+    // TODO: I really don't know why these have to be backwards
+    glScaled(scale,scale,scale);
+    glTranslated(dx,dy,dz);
+
+    // Draw DEM Triangles
+	for (int i=0;i<dimension-inc;i+=inc) {
+		for (int j=0;j<dimension-inc;j+=inc) {
+            if (dem->data[i][j] == 0) continue;
+            glColor3f(1,0,1);
+			float x = dem->pos[0] + dem->resolution*i; // UTM x-coordinate
+			float z = dem->pos[1] - dem->resolution*j; // UTM z-coordinate
+//            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
+            vtx A = {x,ymag*dem->data[i][j],-z};
+            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j],-z};
+            vtx C = {x,ymag*dem->data[i][j+inc],-(z-dem->resolution*inc)};
+            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc],-(z-dem->resolution*inc)};
+            triangle(A,B,C);
+            triangle(C,B,D);
+		}
+    }
+
+    // Undo transformations
+    glPopMatrix();
+}
+
+/*
+ *  Read 1 meter DEM from the 4 corresonding files
+ */
+void ReadDEM_1m(char* file1, char* file2, char* file3, char* file4, DEM_1m* dem) {
+   FILE* f1 = fopen(file1,"r");
+   if (!f1) Fatal("Cannot open file %s\n",file1);
+   FILE* f2 = fopen(file2,"r");
+   if (!f2) Fatal("Cannot open file %s\n",file2);
+   FILE* f3 = fopen(file3,"r");
+   if (!f3) Fatal("Cannot open file %s\n",file3);
+   FILE* f4 = fopen(file4,"r");
+   if (!f4) Fatal("Cannot open file %s\n",file4);
+
+   for (int i=0; i<6178; i++) {
+       for (int j=0; j<6178; j++) {
+           if (i<1544) {if (fscanf(f1,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file1);}
+           else if (i<3089) {if (fscanf(f2,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file2);}
+           else if (i<4632) {if (fscanf(f3,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file3);}
+           else {if (fscanf(f4,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file4);}
+	   }
+   }
+
+   fclose(f1);
+   fclose(f2);
+   fclose(f3);
+   fclose(f4);
 }
 
 
@@ -216,12 +278,12 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-    drawDEM_1_arc(&n39w107);
+//    drawDEM_1_arc(&n39w107,10);
+    const int center = sizeof(gore_range.data[0])/sizeof(float)*gore_range.resolution/2;
+    drawDEM_1m(&gore_range,-gore_range.pos[0]-center,-3300*ymag,gore_range.pos[1]-center,1);
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
-    // Draw Digital Elevation Models
-    drawDEM_1_arc(&n39w107);
 
     //  Draw axes
     glColor3f(1,1,1);
@@ -246,6 +308,8 @@ void display() {
     }
 
     // Display parameters
+    glWindowPos2i(5,25);
+    Print("Ambient: %d%%, Diffuse: %d%%, Specular: %d%%",ambient, diffuse, specular);
     glWindowPos2i(5,5);
     Print("X: %.1f, Y: %.1f, Z: %.1f, Dim: %.0f",E[0],E[1],E[2],dim);
 
@@ -351,6 +415,7 @@ void key(unsigned char ch,int x,int y) {
             break;
 
         /* Lighting Controls */
+        // TODO: Remove in final product
         // Increase ambient light
         case '1':
             if (ambient < 100) ambient += 5;
@@ -405,7 +470,7 @@ void reshape(int width,int height) {
 static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
-    l_th = fmod(t*90,360);
+    l_th = fmod(t*30,360);
 
     // Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
@@ -420,8 +485,8 @@ int main(int argc,char* argv[]) {
     E[1] = 0.85*dim;
     E[2] = 0.66*dim;
     // Set light source position
-    l_ph = 0.5*dim;
-    distance = 0.5*dim;
+    l_ph = 1.5*dim;
+    distance = 2*dim;
     //  Initialize GLUT
     glutInit(&argc,argv);
     //  Request double buffered, true color window with Z buffering at 600x600
@@ -443,7 +508,8 @@ int main(int argc,char* argv[]) {
 //    glutMotionFunc(motion);
     //  TODO: Load textures
     // Load DEMs
-    ReadDEM_1_arc("n39w107_1a_c.dem",&n39w107);
+//    ReadDEM_1_arc("n39w107_1a_c.dem",&n39w107);
+    ReadDEM_1m("GoreRange1.dem","GoreRange2.dem","GoreRange3.dem","GoreRange4.dem",&gore_range);
 
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
