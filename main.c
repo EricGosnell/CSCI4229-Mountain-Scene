@@ -20,6 +20,10 @@
 double dt = 0; // Time step
 int axes = 1; // Toggle axes
 typedef struct {float x,y,z;} vtx;
+int polygon_count = 0; // Total number of polygons
+int frame_count = 0; // Frame count
+int t0 = 0; // Initial time for measuring FPS
+float fps = -1; // Starting value for FPS
 
 /* Digital Elevation Model */
 typedef struct {
@@ -38,7 +42,7 @@ typedef struct {
 DEM_1m gore_range = {.resolution=1,
 					 .pos[0] = 383807,
 					 .pos[1] = 4404735}; // 1 meter DEM starting at UTM 13 x383807 y4404735
-float ymag = 1.5; // DEM vertical magnification
+float ymag = 1; // DEM vertical magnification
 
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
@@ -57,6 +61,42 @@ int emission    = 100;  // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
+
+static void setColor(float slope_angle, float elevation) {
+    if (elevation < 3300) {
+        float forest[] = {0.13,0.55,0.13,1.0};
+        glColor4fv(forest);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,forest);
+    } else if (elevation < 3700) {
+        float tundra[] = {0.3,0.5,0.3,1.0};
+        glColor4fv(tundra);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,tundra);
+    } else {
+        float snow[] = {0.8,0.8,0.8,1.0};
+        glColor4fv(snow);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,snow);
+    }
+    if (slope_angle <= 0) {
+        float lake[] = {0.2,0.3,1,1.0};
+        glColor4fv(lake);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,lake);
+    }
+//    else if (slope_angle < 40) {
+//        float forest[] = {0.13,0.55,0.13,1.0};
+//        glColor4fv(forest);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,forest);
+//    }
+    else if (slope_angle > 40 && slope_angle < 50) {
+        float dirt[] = {0.5,0.4,0.3,1.0};
+        glColor4fv(dirt);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,dirt);
+    }
+    else if (slope_angle > 40 && slope_angle < 90) {
+        float stone[] = {0.25,0.25,0.2,1.0};
+        glColor4fv(stone);
+//        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,stone);
+    }
+}
 
 /*
  *  Draw vertex in polar coordinates with normal
@@ -80,14 +120,22 @@ static void triangle(vtx A, vtx B, vtx C) {
     float Nx = (A.y-B.y)*(C.z-A.z) - (C.y-A.y)*(A.z-B.z);
     float Ny = (A.z-B.z)*(C.x-A.x) - (C.z-A.z)*(A.x-B.x);
     float Nz = (A.x-B.x)*(C.y-A.y) - (C.x-A.x)*(A.y-B.y);
-    //  Draw triangle
     glNormal3f(Nx,Ny,Nz);
+    // Normalize the normal vector vertical component
+    float length = sqrt(Nx*Nx+Ny*Ny+Nz*Nz);
+    Ny /= length;
+    // Calculate slope angle
+    float slope_angle = acos(Ny) * (180/M_PI);
+    // Set color based on slope angle and elevation
+    setColor(slope_angle,A.y);
+    //  Draw triangle
     glBegin(GL_TRIANGLES);
-        glVertex3f(A.x,A.y,A.z);
-        glVertex3f(B.x,B.y,B.z);
         glVertex3f(C.x,C.y,C.z);
+        glVertex3f(B.x,B.y,B.z);
+        glVertex3f(A.x,A.y,A.z);
     glEnd();
-}
+    polygon_count++;
+};
 
 /*
  *  Draw a sphere
@@ -95,8 +143,7 @@ static void triangle(vtx A, vtx B, vtx C) {
  *     radius (r)
  *  Credit: Vlakkies
  */
-static void sphere(double x,double y,double z,double r) {
-   const int inc = 15;
+static void sphere(double x,double y,double z,double r, int inc) {
    //  Save transformation
    glPushMatrix();
    //  Offset, scale and rotate
@@ -115,6 +162,7 @@ static void sphere(double x,double y,double z,double r) {
       for (int th=0;th<=360;th+=2*inc) {
          Vertex(th,ph);
          Vertex(th,ph+inc);
+         polygon_count++;
       }
       glEnd();
    }
@@ -122,60 +170,60 @@ static void sphere(double x,double y,double z,double r) {
    glPopMatrix();
 }
 
-/*
- *  Draw 1 arc-second DEM Wireframe
- */
-void drawDEM_1_arc(DEM_1_arc* dem, double scale) {
-    const float dimension = sizeof(dem->data[0])/sizeof(float);
-    const int y_norm = 3000; // Rough average elevation in meters
-    const int inc = 1; // Factor to reduce resolution by
-    // Save transformation
-    glPushMatrix();
-    // Scale
-    glScaled(scale,scale,scale);
-
-	//  Draw DEM Triangles
-	for (int i=7*dimension/16;i<9*dimension/16-1;i+=inc) {
-		for (int j=7*dimension/16;j<9*dimension/16-1;j+=inc) {
-            glColor3f(1,0,1);
-			float x = dem->pos[0] + dem->resolution*i; // Latitude
-			float z = dem->pos[1] - dem->resolution*j; // Longitude
-//            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
-            vtx A = {x,ymag*dem->data[i][j]-y_norm,-z};
-            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z};
-            vtx C = {x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc)};
-            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc)};
-            triangle(A,B,C);
-            triangle(C,B,D);
-		}
-    }
-
-    // Undo transformations
-    glPopMatrix();
-}
-
-/*
- *  Read 1 arc-second DEM from file
- */
-void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
-   const float dimension = sizeof(dem->data[0])/sizeof(float);
-   int i,j;
-   FILE* f = fopen(file,"r");
-   if (!f) Fatal("Cannot open file %s\n",file);
-   for (j=0; j<dimension; j++) {
-      for (i=0; i<dimension; i++) {
-         if (fscanf(f,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file);
-      }
-    }
-   fclose(f);
-}
+///*
+// *  Draw 1 arc-second DEM Wireframe
+// */
+//void drawDEM_1_arc(DEM_1_arc* dem, double scale) {
+//    const float dimension = sizeof(dem->data[0])/sizeof(float);
+//    const int y_norm = 3000; // Rough average elevation in meters
+//    const int inc = 1; // Factor to reduce resolution by
+//    // Save transformation
+//    glPushMatrix();
+//    // Scale
+//    glScaled(scale,scale,scale);
+//
+//	//  Draw DEM Triangles
+//	for (int i=7*dimension/16;i<9*dimension/16-1;i+=inc) {
+//		for (int j=7*dimension/16;j<9*dimension/16-1;j+=inc) {
+//            glColor3f(1,0,1);
+//			float x = dem->pos[0] + dem->resolution*i; // Latitude
+//			float z = dem->pos[1] - dem->resolution*j; // Longitude
+////            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
+//            vtx A = {x,ymag*dem->data[i][j]-y_norm,-z};
+//            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z};
+//            vtx C = {x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc)};
+//            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc)};
+//            triangle(A,B,C);
+//            triangle(C,B,D);
+//		}
+//    }
+//
+//    // Undo transformations
+//    glPopMatrix();
+//}
+//
+///*
+// *  Read 1 arc-second DEM from file
+// */
+//void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
+//   const float dimension = sizeof(dem->data[0])/sizeof(float);
+//   int i,j;
+//   FILE* f = fopen(file,"r");
+//   if (!f) Fatal("Cannot open file %s\n",file);
+//   for (j=0; j<dimension; j++) {
+//      for (i=0; i<dimension; i++) {
+//         if (fscanf(f,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file);
+//      }
+//    }
+//   fclose(f);
+//}
 
 /*
  *  Draw 1 meter DEM Wireframe
  */
 void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
     const float dimension = sizeof(dem->data[0])/sizeof(float);
-    const int inc = 10; // Factor to reduce resolution by
+    const int inc = 20; // Factor to reduce resolution by
     // Save transformation
     glPushMatrix();
     // Translate and Scale
@@ -183,11 +231,18 @@ void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
     glScaled(scale,scale,scale);
     glTranslated(dx,dy,dz);
 
+    // Enable Face Culling
+    glEnable(GL_CULL_FACE);
+    // Set Color Properties
+    float black[]  = {0.0,0.0,0.0,1.0};
+    float white[]  = {1.0,1.0,1.0,1.0};
+    glMaterialfv(GL_FRONT,GL_EMISSION,black);
+    glMaterialfv(GL_FRONT,GL_SPECULAR,white);
+    glMaterialf(GL_FRONT,GL_SHININESS,shiny);
     // Draw DEM Triangles
 	for (int i=0;i<dimension-inc;i+=inc) {
 		for (int j=0;j<dimension-inc;j+=inc) {
             if (dem->data[i][j] == 0) continue;
-            glColor3f(1,0,1);
 			float x = dem->pos[0] + dem->resolution*i; // UTM x-coordinate
 			float z = dem->pos[1] - dem->resolution*j; // UTM z-coordinate
 //            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
@@ -199,6 +254,8 @@ void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
             triangle(C,B,D);
 		}
     }
+    // Disable Face Culling
+    glDisable(GL_CULL_FACE);
 
     // Undo transformations
     glPopMatrix();
@@ -219,10 +276,10 @@ void ReadDEM_1m(char* file1, char* file2, char* file3, char* file4, DEM_1m* dem)
 
    for (int i=0; i<6178; i++) {
        for (int j=0; j<6178; j++) {
-           if (i<1544) {if (fscanf(f1,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file1);}
-           else if (i<3089) {if (fscanf(f2,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file2);}
-           else if (i<4632) {if (fscanf(f3,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file3);}
-           else {if (fscanf(f4,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file4);}
+           if (i<1544) {if (fscanf(f1,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file1);}
+           else if (i<3089) {if (fscanf(f2,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file2);}
+           else if (i<4632) {if (fscanf(f3,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file3);}
+           else {if (fscanf(f4,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file4);}
 	   }
    }
 
@@ -237,6 +294,8 @@ void ReadDEM_1m(char* file1, char* file2, char* file3, char* file4, DEM_1m* dem)
  *  OpenGL (GLUT) calls this routine to display the scene
  */
 void display() {
+    // Reset polygon count
+    polygon_count = 0;
     //  Erase the window and the depth buffer
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     //  Enable Z-buffering in OpenGL
@@ -259,7 +318,7 @@ void display() {
     float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
     //  Draw light position as ball (still no lighting here)
     glColor3f(1,1,1);
-    sphere(Position[0],Position[1],Position[2], 0.01*dim);
+    sphere(Position[0],Position[1],Position[2], 0.01*dim, 30);
     //  OpenGL should normalize normal vectors
     glEnable(GL_NORMALIZE);
     //  Enable lighting
@@ -307,7 +366,19 @@ void display() {
         Print("Z");
     }
 
+    // Calculate FPS
+    frame_count++;
+    int t = glutGet(GLUT_ELAPSED_TIME);
+    if (t - t0 >= 1000) {
+        float seconds = (t-t0)/1000.0;
+        fps = frame_count/seconds;
+        t0 = t;
+        frame_count = 0;
+    }
+
     // Display parameters
+    glWindowPos2i(5,45);
+    Print("Polygon Count: %d, FPS: %2.2f",polygon_count,fps);
     glWindowPos2i(5,25);
     Print("Ambient: %d%%, Diffuse: %d%%, Specular: %d%%",ambient, diffuse, specular);
     glWindowPos2i(5,5);
@@ -471,6 +542,7 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
     l_th = fmod(t*30,360);
+
 
     // Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
