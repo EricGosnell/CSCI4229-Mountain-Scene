@@ -27,21 +27,11 @@ float fps = -1; // Starting value for FPS
 
 /* Digital Elevation Model */
 typedef struct {
-    float data[3612][3612]; // Elevation Data
-    float pos[2]; // Top left corner latitude and longitude
-    const float resolution; // 1 arc-second = 24 meters
-} DEM_1_arc;
-DEM_1_arc n39w107 = {.resolution=24,
-					 .pos[0] = -43344, // TODO: should not be centered at (0,0) meters
-					 .pos[1] = 43344}; // 1 arc-second DEM starting at 39N, 107W
-typedef struct {
     float data[6178][6178]; // Elevation Data
     float pos[2]; // Top left corner UTM coordinate
-    const float resolution; // 1 meter
-} DEM_1m;
-DEM_1m gore_range = {.resolution=1,
-					 .pos[0] = 383807,
-					 .pos[1] = 4404735}; // 1 meter DEM starting at UTM 13 x383807 y4404735
+} DEM;
+DEM gore_range = {.pos[0] = 383807,
+				  .pos[1] = 4404735}; // 1 meter DEM starting at UTM 13 x383807 y4404735
 float ymag = 1; // DEM vertical magnification
 
 /* First Person Camera Settings */
@@ -170,60 +160,12 @@ static void sphere(double x,double y,double z,double r, int inc) {
    glPopMatrix();
 }
 
-///*
-// *  Draw 1 arc-second DEM Wireframe
-// */
-//void drawDEM_1_arc(DEM_1_arc* dem, double scale) {
-//    const float dimension = sizeof(dem->data[0])/sizeof(float);
-//    const int y_norm = 3000; // Rough average elevation in meters
-//    const int inc = 1; // Factor to reduce resolution by
-//    // Save transformation
-//    glPushMatrix();
-//    // Scale
-//    glScaled(scale,scale,scale);
-//
-//	//  Draw DEM Triangles
-//	for (int i=7*dimension/16;i<9*dimension/16-1;i+=inc) {
-//		for (int j=7*dimension/16;j<9*dimension/16-1;j+=inc) {
-//            glColor3f(1,0,1);
-//			float x = dem->pos[0] + dem->resolution*i; // Latitude
-//			float z = dem->pos[1] - dem->resolution*j; // Longitude
-////            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
-//            vtx A = {x,ymag*dem->data[i][j]-y_norm,-z};
-//            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j]-y_norm,-z};
-//            vtx C = {x,ymag*dem->data[i][j+inc]-y_norm,-(z-dem->resolution*inc)};
-//            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc]-y_norm,-(z-dem->resolution*inc)};
-//            triangle(A,B,C);
-//            triangle(C,B,D);
-//		}
-//    }
-//
-//    // Undo transformations
-//    glPopMatrix();
-//}
-//
-///*
-// *  Read 1 arc-second DEM from file
-// */
-//void ReadDEM_1_arc(char* file, DEM_1_arc* dem) {
-//   const float dimension = sizeof(dem->data[0])/sizeof(float);
-//   int i,j;
-//   FILE* f = fopen(file,"r");
-//   if (!f) Fatal("Cannot open file %s\n",file);
-//   for (j=0; j<dimension; j++) {
-//      for (i=0; i<dimension; i++) {
-//         if (fscanf(f,"%f",&dem->data[i][j])!=1) Fatal("Error reading %s\n", file);
-//      }
-//    }
-//   fclose(f);
-//}
-
 /*
  *  Draw 1 meter DEM Wireframe
  */
-void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
+void drawDEM(DEM* dem, double dx, double dy, double dz, double scale) {
     const float dimension = sizeof(dem->data[0])/sizeof(float);
-    const int inc = 20; // Factor to reduce resolution by
+    const int inc = 10; // Factor to reduce resolution by
     // Save transformation
     glPushMatrix();
     // Translate and Scale
@@ -243,13 +185,13 @@ void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
 	for (int i=0;i<dimension-inc;i+=inc) {
 		for (int j=0;j<dimension-inc;j+=inc) {
             if (dem->data[i][j] == 0) continue;
-			float x = dem->pos[0] + dem->resolution*i; // UTM x-coordinate
-			float z = dem->pos[1] - dem->resolution*j; // UTM z-coordinate
+			float x = dem->pos[0] + i; // UTM x-coordinate
+			float z = dem->pos[1] - j; // UTM z-coordinate
 //            if (dem->data[i][j] > 3200) glColor3f(1,1,1);
             vtx A = {x,ymag*dem->data[i][j],-z};
-            vtx B = {x+dem->resolution*inc,ymag*dem->data[i+inc][j],-z};
-            vtx C = {x,ymag*dem->data[i][j+inc],-(z-dem->resolution*inc)};
-            vtx D = {x+dem->resolution*inc,ymag*dem->data[i+inc][j+inc],-(z-dem->resolution*inc)};
+            vtx B = {x+inc,ymag*dem->data[i+inc][j],-z};
+            vtx C = {x,ymag*dem->data[i][j+inc],-(z-inc)};
+            vtx D = {x+inc,ymag*dem->data[i+inc][j+inc],-(z-inc)};
             triangle(A,B,C);
             triangle(C,B,D);
 		}
@@ -264,7 +206,7 @@ void drawDEM_1m(DEM_1m* dem, double dx, double dy, double dz, double scale) {
 /*
  *  Read 1 meter DEM from the 4 corresonding files
  */
-void ReadDEM_1m(char* file1, char* file2, char* file3, char* file4, DEM_1m* dem) {
+void ReadDEM(char* file1, char* file2, char* file3, char* file4, DEM* dem) {
    FILE* f1 = fopen(file1,"r");
    if (!f1) Fatal("Cannot open file %s\n",file1);
    FILE* f2 = fopen(file2,"r");
@@ -337,9 +279,8 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-//    drawDEM_1_arc(&n39w107,10);
-    const int center = sizeof(gore_range.data[0])/sizeof(float)*gore_range.resolution/2;
-    drawDEM_1m(&gore_range,-gore_range.pos[0]-center,-3300*ymag,gore_range.pos[1]-center,1);
+    const int center = sizeof(gore_range.data[0])/sizeof(float)/2;
+    drawDEM(&gore_range,-gore_range.pos[0]-center,-3300*ymag,gore_range.pos[1]-center,1);
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
@@ -579,9 +520,8 @@ int main(int argc,char* argv[]) {
 //    glutMouseFunc(mouse);
 //    glutMotionFunc(motion);
     //  TODO: Load textures
-    // Load DEMs
-//    ReadDEM_1_arc("n39w107_1a_c.dem",&n39w107);
-    ReadDEM_1m("GoreRange1.dem","GoreRange2.dem","GoreRange3.dem","GoreRange4.dem",&gore_range);
+    // Load DEM
+    ReadDEM("GoreRange1.dem","GoreRange2.dem","GoreRange3.dem","GoreRange4.dem",&gore_range);
 
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
