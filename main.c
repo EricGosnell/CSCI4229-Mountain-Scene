@@ -24,7 +24,7 @@ int axes = 1; // Toggle axes
 /* First Person Camera Settings */
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
-double dim = 4; // Size of world
+double dim = 1; // Size of world
 double E[3] = {1.5,1.5,1.5}; // Eye position for first person
 double C[3] = {0,-1.5,0}; // Camera position for first person
 
@@ -58,13 +58,13 @@ static void Vertex(double th,double ph) {
  *     radius (r)
  *  Credit: Vlakkies
  */
-static void sphere(double x,double y,double z,double r) {
+static void sphere(double x,double y,double z,double rx, double ry, double rz) {
    const int inc = 15;
    //  Save transformation
    glPushMatrix();
    //  Offset, scale and rotate
    glTranslated(x,y,z);
-   glScaled(r,r,r);
+   glScaled(rx,ry,rz);
    //  White ball with yellow specular
    float yellow[]   = {1.0,1.0,0.0,1.0};
    float Emission[] = {0.0,0.0,0.01*emission,1.0};
@@ -83,6 +83,34 @@ static void sphere(double x,double y,double z,double r) {
    }
    //  Undo transofrmations
    glPopMatrix();
+}
+
+static void rabbit(double dx, double dy, double dz, double x, double y, double z, double th){
+    glPushMatrix();
+    //adjust placement, rotation, scale
+    glTranslated(x,y,z);
+    glRotated(th,0,1,0);
+    glScaled(dx,dy,dz);
+
+    sphere(-.2,1,.5,.15,.6,.15); //ears
+    sphere(.2,1,.5,.15,.6,.15); //ears
+    sphere(0,.65,.65,.4,.4,.4); //head
+    sphere(0,.6,.9,.25,.2,.25); //nose
+    sphere(.25,.75,.8,.1,.085,.09); //eye right side
+    sphere(-.25,.75,.8,.1,.085,.09); //eye left side
+    sphere(0,0,.5,.5,.45,.45); //body front
+    sphere(-.25,-.2,.7,.2,.4,.2); //leg left side
+    sphere(.25,-.2,.7,.2,.4,.2); //leg right side
+    sphere(0,-.1,0,.6,.6,.6); //back half of body
+    sphere(0,-.05,-.6,.3,.3,.3); //back half of body
+    sphere(.3,-.1,0,.4,.5,.4); //back leg right
+    sphere(-.3,-.1,0,.4,.5,.4); //back leg left
+
+    glPopMatrix();
+}
+
+static void owl(double dx, double dy, double dz, double z, double y, double z, double th){
+    return 0;
 }
 
 /*
@@ -111,7 +139,7 @@ void display() {
     float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
     //  Draw light position as ball (still no lighting here)
     glColor3f(1,1,1);
-    sphere(Position[0],Position[1],Position[2], 0.1);
+    sphere(Position[0],Position[1],Position[2], 0.1, 0.1,0.1);
     //  OpenGL should normalize normal vectors
     glEnable(GL_NORMALIZE);
     //  Enable lighting
@@ -128,6 +156,7 @@ void display() {
     glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
+    rabbit(.5,.5,.5,0,0,0,0);
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
