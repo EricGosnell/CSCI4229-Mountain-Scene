@@ -18,7 +18,7 @@
 
 /* Global Variables */
 double dt = 0; // Time step
-int axes = 1; // Toggle axes
+int axes = 0; // Toggle axes
 typedef struct {float x,y,z;} vtx;
 int polygon_count = 0; // Total number of polygons
 int frame_count = 0; // Frame count
@@ -106,51 +106,64 @@ static void sphere(double x,double y,double z,double r, int inc) {
    glPopMatrix();
 }
 
-static void getColor(float slope_angle, DEM_triangle* tri) {
-    if (tri->A.y < 3300) {
-        float forest[] = {0.13,0.55,0.13,1.0};
-        tri->rgba[0] = forest[0];
-        tri->rgba[1] = forest[1];
-        tri->rgba[2] = forest[2];
-        tri->rgba[3] = forest[3];
-    } else if (tri->A.y < 3700) {
-        float tundra[] = {0.3,0.5,0.3,1.0};
-        tri->rgba[0] = tundra[0];
-        tri->rgba[1] = tundra[1];
-        tri->rgba[2] = tundra[2];
-        tri->rgba[3] = tundra[3];
+// Linearly interpolates between two colors
+void interpolateColor(const GLfloat color1[3], const GLfloat color2[3], float t, GLfloat result[3]) {
+    for (int i = 0; i < 3; i++) {
+        result[i] = (1.0f - t) * color1[i] + t * color2[i];
+    }
+}
+
+static void getColor(float slope_angle, float orientation, DEM_triangle* tri) {
+    float elevation = (tri->A.y + tri->B.y + tri->C.y)/3; // Average elevation of triangle
+    float t; // Color interpolation value
+
+    // Colors
+	GLfloat forest[] = {0.13, 0.35, 0.13}; // Dark forest green
+	GLfloat tundra[] = {0.53, 0.55, 0.46}; // Tundra greenish grey
+	GLfloat dirtStone[] = {0.6, 0.5, 0.4}; // Exposed dirt and stone
+    GLfloat snow[] = {0.8,0.8,0.8}; // Snow
+
+    if (elevation <= 3300.0f) {
+        // Below 3000, use dark forest green
+        for (int i = 0; i < 3; i++) tri->rgba[i] = forest[i];
+    } else if (elevation >= 4000.0f) {
+        // Above 4000, use dirt/stone tri->rgba
+        for (int i = 0; i < 3; i++) tri->rgba[i] = dirtStone[i];
+    } else if (elevation < 3600.0f) {
+        // Smooth transition between dark forest green and tundra green/grey (3000 to 3500)
+        t = (elevation - 3300.0f) / 300.0f;
+        interpolateColor(forest, tundra, t, tri->rgba);
     } else {
-        float snow[] = {0.8,0.8,0.8,1.0};
-        tri->rgba[0] = snow[0];
-        tri->rgba[1] = snow[1];
-        tri->rgba[2] = snow[2];
-        tri->rgba[3] = snow[3];
+        // Smooth transition between tundra green/grey and dirt/stone (3500 to 4000)
+        t = (elevation - 3600.0f) / 400.0f;
+        interpolateColor(tundra, dirtStone, t, tri->rgba);
     }
-    if (slope_angle <= 0) {
-        float lake[] = {0.2,0.3,1,1.0};
-        tri->rgba[0] = lake[0];
-        tri->rgba[1] = lake[1];
-        tri->rgba[2] = lake[2];
-        tri->rgba[3] = lake[3];
+
+	// Darken steeper slopes
+    if (slope_angle > 30) {
+    	float darkeningFactor = 1.0f - ((slope_angle-30) / 60.0f);
+    	for (int i = 0; i < 3; i++) {
+        	tri->rgba[i] *= darkeningFactor;
+    	}
     }
-    //    else if (slope_angle < 40) {
-    //        float forest[] = {0.13,0.55,0.13,1.0};
-    //        ...
-    //    }
-    else if (slope_angle > 40 && slope_angle < 50) {
-        float dirt[] = {0.5,0.4,0.3,1.0};
-        tri->rgba[0] = dirt[0];
-        tri->rgba[1] = dirt[1];
-        tri->rgba[2] = dirt[2];
-        tri->rgba[3] = dirt[3];
+    // Snow
+    if (slope_angle < 55 && (orientation > 270 || orientation < 90 || elevation > 3900)) {
+        if (elevation > 3650) {
+			// Smooth transition between dirt/stone and snow (3700 to 3800)
+        	t = (elevation - 3650.0f) / 100.0f;
+        	interpolateColor(tundra, snow, t, tri->rgba);
+        }
     }
-    else if (slope_angle > 40 && slope_angle < 90) {
-        float stone[] = {0.25,0.25,0.2,1.0};
-        tri->rgba[0] = stone[0];
-        tri->rgba[1] = stone[1];
-        tri->rgba[2] = stone[2];
-        tri->rgba[3] = stone[3];
+
+    // Lakes
+    if (slope_angle == 0) {
+        tri->rgba[0] = 0;
+        tri->rgba[1] = 0.4;
+        tri->rgba[2] = 0.6;
     }
+
+    // Set alpha value to 1
+    tri->rgba[3] = 1;
 }
 
 /*
@@ -241,8 +254,11 @@ void ReadDEM(char* file1, char* file2, char* file3, char* file4, DEM* dem) {
                Ny /= length;
                // Calculate slope angle
                float slope_angle = acos(Ny) * (180/M_PI);
-               // Set color based on slope angle and elevation
-               getColor(slope_angle,&triangles[n+k]);
+               // Calculate orientation
+               float orientation = atan2(-Nz,-Nx) * (180/M_PI);
+			   if (orientation < 0) orientation += 360;
+               // Set color based on slope angle, orientation, and elevation
+               getColor(slope_angle,orientation,&triangles[n+k]);
            }
        }
    }
@@ -267,6 +283,7 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     // Translate and Scale
     // TODO: I really don't know why these have to be backwards
     glScaled(scale,scale,scale);
+    glRotated(180,0,1,0);
     glTranslated(dx,dy,dz);
 
 
@@ -348,7 +365,8 @@ void display() {
 
     /* Draw Digital Elevation Models */
     const int center = 6178/2; // TODO: gore_range.width
-    drawDEM(-gore_range.pos[0]-center,-3300*ymag,gore_range.pos[1]+center,1);
+    drawDEM(-gore_range.pos[0]-center,-3500*ymag,gore_range.pos[1]+center,3);
+
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
