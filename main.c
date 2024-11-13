@@ -46,8 +46,8 @@ int th = -135; // Azimuth of view angle
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
-double E[3]; // Eye position for first person
-double C[3] = {0,0,0}; // Camera position for first person
+double E[3]; // Eye position for first person (Position you're at)
+double C[3] = {3089,3700,-3089}; // Camera position for first person (Position you're looking at)
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -282,13 +282,25 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     glPushMatrix();
     // Translate and Scale
     // TODO: I really don't know why these have to be backwards
-    glScaled(scale,scale,scale);
-    glRotated(180,0,1,0);
-    glTranslated(dx,dy,dz);
-
-
+//    glScaled(scale,scale,scale);
+//    glRotated(180,0,1,0);
+//    glTranslated(dx,dy,dz);
     // Enable Face Culling
     glEnable(GL_CULL_FACE);
+
+    // Calculate dot product between triangle and camera
+    float F[3];
+    float T[3];
+    for (int i=0; i<3; i++) {
+        F[i] = (C[i]-E[i]);
+    }
+        float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
+        F[0] /= f_len;
+        F[1] /= f_len;
+        F[2] /= f_len;
+
+
+
     // Set Color Properties
     float black[]  = {0.0,0.0,0.0,1.0};
     float white[]  = {1.0,1.0,1.0,1.0};
@@ -298,9 +310,27 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     // Draw DEM Triangles
     int nt = sizeof(triangles)/sizeof(DEM_triangle);
     for (int i=0; i<nt; i++) {
+        // Only draw triangle if the dot product between it and the forward vector > 0
+        // TODO: calculate centroid of triangle
+//        if ((triangles[i].A.x*F[0]+P[0]) + (triangles[i].A.y*F[1]+P[1]) + (triangles[i].A.z*F[2]+P[2]) < 0) continue;
+        T[0] = triangles[i].A.x - E[0];
+        T[1] = triangles[i].A.y - E[1];
+        T[2] = triangles[i].A.z - E[2];
+        if (F[0]*T[0] + F[1]*T[1] + F[2]*T[2] < 0) continue;
+        // Face culling based on dot product of the forward vector and the normal vector
+//        float nl = sqrt(triangles[i].normal[0]*triangles[i].normal[0]+triangles[i].normal[1]*triangles[i].normal[1]+triangles[i].normal[2]*triangles[i].normal[2]);
+//        if (F[0]*triangles[i].normal[0]+F[1]*triangles[i].normal[1]+F[2]*triangles[i].normal[2] > 100) continue; // TODO: unsure why 100
+        // Set Normal and Color
         glNormal3f(triangles[i].normal[0],triangles[i].normal[1],triangles[i].normal[2]);
         glColor4f(triangles[i].rgba[0],triangles[i].rgba[1],triangles[i].rgba[2],triangles[i].rgba[3]);
-//        glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,triangles[i].rgba);
+        //TODO: temp
+        if (i==nt/2) {
+            glColor4f(1,0,0,0);
+            glWindowPos2i(5,120);
+//            Print("tx: %.2f, ty: %.2f, tz: %.2f,", triangles[i].A.x+dx,triangles[i].A.y+dy,triangles[i].A.z+dz);
+            Print("T[0]: %.2f, T[1]: %.2f, T[2]: %.2f",T[0],T[1],T[2]);
+        }
+//        glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,triangles[i].rgba); // TODO: FPS drops substantially
         glBegin(GL_TRIANGLES);
             glVertex3f(triangles[i].C.x, triangles[i].C.y, triangles[i].C.z);
             glVertex3f(triangles[i].B.x, triangles[i].B.y, triangles[i].B.z);
@@ -308,9 +338,9 @@ void drawDEM(double dx, double dy, double dz, double scale) {
         glEnd();
         polygon_count++;
     }
+
     // Disable Face Culling
     glDisable(GL_CULL_FACE);
-
     // Undo transformations
     glPopMatrix();
 }
@@ -366,6 +396,11 @@ void display() {
     /* Draw Digital Elevation Models */
     const int center = 6178/2; // TODO: gore_range.width
     drawDEM(-gore_range.pos[0]-center,-3500*ymag,gore_range.pos[1]+center,3);
+    glColor3f(1,1,1);
+    glWindowPos2i(5,100);
+    Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
+    glWindowPos2i(5,80);
+    Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
 
 
     /* Draw axes */
@@ -581,9 +616,13 @@ static void idle(void) {
  */
 int main(int argc,char* argv[]) {
     // Set camera position
-    E[0] = 0.66*dim;
-    E[1] = 0.85*dim;
-    E[2] = 0.66*dim;
+    //TODO: temp
+//    E[0] = 0.66*dim;
+//    E[1] = 0.85*dim;
+//    E[2] = 0.66*dim;
+    E[0] = 3089;
+    E[1] = 3700;
+    E[2] = -3089;
     // Set light source position
     l_ph = 1.5*dim;
     distance = 2*dim;
