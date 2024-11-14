@@ -38,6 +38,8 @@ float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph      = 2;    // Elevation of light
 
+int sky[6];   //  Sky textures
+
 /*
  *  Draw vertex in polar coordinates with normal
  *  Credit: Vlakkies
@@ -84,6 +86,57 @@ static void sphere(double x,double y,double z,double r) {
    //  Undo transofrmations
    glPopMatrix();
 }
+static void Sky(double D)
+{
+   //  Textured white box dimension (-D,+D)
+   glPushMatrix();
+   glScaled(D,D,D);
+   glEnable(GL_TEXTURE_2D);
+   glColor3f(1,1,1);
+
+   //  Sides
+   glBindTexture(GL_TEXTURE_2D,sky[0]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.00,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(1.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(1.00,1); glVertex3f(-1,+1,-1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glEnd();
+
+   //  Top and bottom
+   glBindTexture(GL_TEXTURE_2D,sky[0]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.0,0); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.0,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(1.0,1); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(1.0,0); glVertex3f(-1,-1,-1);
+   glEnd();
+
+   //  Undo
+   glDisable(GL_TEXTURE_2D);
+   glPopMatrix();
+}
+
 
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -155,7 +208,7 @@ void display() {
     // Display parameters
     glWindowPos2i(5,5);
     Print("X: %.1f, Y: %.1f, Z: %.1f, Dim: %.0f",E[0],E[1],E[2],dim);
-
+    Sky(10);
     //  Render the scene and make it visible
     ErrCheck("display");
     glFlush();
@@ -344,6 +397,7 @@ int main(int argc,char* argv[]) {
     //  TODO: Load textures
     //  TODO: Load DEMs
     //  Pass control to GLUT so it can interact with the user
+    sky[0] = LoadTexBMP("sunset.bmp");
     ErrCheck("init");
     glutMainLoop();
     return 0;
