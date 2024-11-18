@@ -170,8 +170,8 @@ static void rabbit(double dx, double dy, double dz, double x, double y, double z
     sphere(0,.65,.65,.4,.4,.4,0,0,0,1,1,1); //head
     sphere(0,.6,.9,.25,.2,.25,0,0,0,1,1,1); //nose
     sphere(0,.6,1.15,.05,.02,.02,0,0,0,0.961, 0.757, 0.757); //nose button
-    sphere(.25,.75,.8,.12,.085,.09,0,0,0,0,0,0); //eye right side
-    sphere(-.25,.75,.8,.12,.085,.09,0,0,0,0,0,0); //eye left side
+    sphere(.25,.75,.8,.12,.07,.07,0,0,0,0,0,0); //eye right side
+    sphere(-.25,.75,.8,.12,.07,.07,0,0,0,0,0,0); //eye left side
     sphere(0,0,.5,.5,.45,.45,0,0,0,1,1,1); //body front
     sphere(-.25,-.2,.7,.2,.4,.2,0,0,0,1,1,1); //leg left side
     sphere(.25,-.2,.7,.2,.4,.2,0,0,0,1,1,1); //leg right side
