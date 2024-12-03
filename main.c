@@ -311,11 +311,16 @@ static void makeBranch(int depth, int th){
             glPopMatrix();
         }
         cylinder(0,0,0,.025,1,.025,0,0,0,30,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
-        if(depth >= 1){
+        if(depth >= 1 && season != 4){
             for(int th = 0; th < 360; th+=90){
             glPushMatrix();
             glRotated(th,0,1,0);
+            if(season == 1 || season == 2){
             glColor3f(pineTreeColors[3][0],pineTreeColors[3][1],pineTreeColors[3][2]);
+            }
+            else{
+            glColor3f(0.9f, 0.7f, 0.0f);
+            }
             triangle(0,.33,0,.3,.3,.3,0,0,0);
             glPopMatrix();
         }
@@ -359,7 +364,12 @@ static void PineTree(double x, double y, double z, double dx, double dy, double 
     for(int i = 1; i < 7; i+=1){
         height += (.055 - (i*.005));
         needleLength-=.035;
-        glColor3f(pineTreeColors[i-1][0],pineTreeColors[i-1][1],pineTreeColors[i-1][2]);
+        if(season == 4){
+            glColor3f(1,1,1);
+        }
+        else{
+            glColor3f(pineTreeColors[i-1][0],pineTreeColors[i-1][1],pineTreeColors[i-1][2]);
+        }
         for(int th = 0; th<360; th+=5){
             glPushMatrix();
             glTranslated(0,height,0);
@@ -620,7 +630,19 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
     l_th = fmod(t*90,360);
-    season = t;
+    int seasonTime = fmod(t,60);
+    if(seasonTime >= 0 && seasonTime < 15){
+        season = 1;
+    }
+    else if(seasonTime >= 15 && seasonTime < 30){
+        season = 2;
+    }
+    else if(seasonTime >= 30 && seasonTime < 45){
+        season = 3;
+    }
+    if(seasonTime >= 45 && seasonTime <= 60){
+        season = 4;
+    }
 
     // Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
