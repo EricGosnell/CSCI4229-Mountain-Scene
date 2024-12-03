@@ -5,5 +5,5 @@ CMakeLists.txt
 *.o
 *.a
 *.exe
-main
+final
 convert
