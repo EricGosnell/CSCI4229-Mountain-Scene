@@ -15,6 +15,7 @@
 */
 
 #include "CSCIx229.h"
+#define DEM_W 4096
 
 /* Global Variables */
 double dt = 0; // Time step
@@ -26,20 +27,13 @@ int t0 = 0; // Initial time for measuring FPS
 float fps = -1; // Starting value for FPS
 
 /* Digital Elevation Model */
-typedef struct {
-    float** data; // Elevation Data
-    float pos[2]; // Top left corner UTM coordinate
-} DEM;
-DEM gore_range = {.pos[0] = 0, // TODO: actual pos
-				  .pos[1] = 0}; // 1 meter DEM starting at UTM 13 x383807 y4404735
+float** data; // Elevation Data
 typedef struct {
     vtx A, B, C;
     float rgba[4];
     float normal[3];
 } DEM_triangle; // Triangle used in drawing the terrain
-DEM_triangle triangles[763848]; // 2*(6178/10)^2  TODO: dynamic allocation based on chunks
-
-float ymag = 1; // DEM vertical magnification
+DEM_triangle triangles[524288]; // 2*(4096/8)^2
 
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
@@ -47,7 +41,7 @@ int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
 double E[3]; // Eye position for first person (Position you're at)
-double C[3] = {3089,3700,-3089}; // Camera position for first person (Position you're looking at)
+double C[3] = {2067,3100,-2120}; // Camera position for first person (Position you're looking at)
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -102,7 +96,7 @@ static void sphere(double x,double y,double z,double r, int inc) {
       }
       glEnd();
    }
-   //  Undo transofrmations
+   //  Undo transformations
    glPopMatrix();
 }
 
@@ -123,19 +117,19 @@ static void getColor(float slope_angle, float orientation, DEM_triangle* tri) {
 	GLfloat dirtStone[] = {0.6, 0.5, 0.4}; // Exposed dirt and stone
     GLfloat snow[] = {0.8,0.8,0.8}; // Snow
 
-    if (elevation <= 3300.0f) {
+    if (elevation <= 3000.0f) {
         // Below 3000, use dark forest green
         for (int i = 0; i < 3; i++) tri->rgba[i] = forest[i];
-    } else if (elevation >= 4000.0f) {
+    } else if (elevation >= 3700.0f) {
         // Above 4000, use dirt/stone tri->rgba
         for (int i = 0; i < 3; i++) tri->rgba[i] = dirtStone[i];
-    } else if (elevation < 3600.0f) {
+    } else if (elevation < 3300.0f) {
         // Smooth transition between dark forest green and tundra green/grey (3000 to 3500)
-        t = (elevation - 3300.0f) / 300.0f;
+        t = (elevation - 3000.0f) / 300.0f;
         interpolateColor(forest, tundra, t, tri->rgba);
     } else {
         // Smooth transition between tundra green/grey and dirt/stone (3500 to 4000)
-        t = (elevation - 3600.0f) / 400.0f;
+        t = (elevation - 3300.0f) / 400.0f;
         interpolateColor(tundra, dirtStone, t, tri->rgba);
     }
 
@@ -147,10 +141,10 @@ static void getColor(float slope_angle, float orientation, DEM_triangle* tri) {
     	}
     }
     // Snow
-    if (slope_angle < 55 && (orientation > 270 || orientation < 90 || elevation > 3900)) {
-        if (elevation > 3650) {
+    if (slope_angle < 55 && (orientation > 270 || orientation < 90 || elevation > 3600)) {
+        if (elevation > 3350) {
 			// Smooth transition between dirt/stone and snow (3700 to 3800)
-        	t = (elevation - 3650.0f) / 100.0f;
+        	t = (elevation - 3350.0f) / 100.0f;
         	interpolateColor(tundra, snow, t, tri->rgba);
         }
     }
@@ -167,13 +161,13 @@ static void getColor(float slope_angle, float orientation, DEM_triangle* tri) {
 }
 
 /*
- *  Read 1 meter DEM from the 4 corresonding files
+ *  Read 1 meter DEM from the 4 corresponding files
  */
-void ReadDEM(char* file1, char* file2, char* file3, char* file4, DEM* dem) {
+void ReadDEM(char* file1, char* file2) {
    // Initialize data array
-   dem->data = malloc(6178 * sizeof(float*));
-   for (int i = 0; i < 6178; i++) {
-       dem->data[i] = malloc(6178 * sizeof(float));
+   data = malloc(DEM_W * sizeof(float*));
+   for (int i = 0; i < DEM_W; i++) {
+       data[i] = malloc(DEM_W * sizeof(float));
    }
 
    // Read in data from files
@@ -181,60 +175,58 @@ void ReadDEM(char* file1, char* file2, char* file3, char* file4, DEM* dem) {
    if (!f1) Fatal("Cannot open file %s\n",file1);
    FILE* f2 = fopen(file2,"r");
    if (!f2) Fatal("Cannot open file %s\n",file2);
-   FILE* f3 = fopen(file3,"r");
-   if (!f3) Fatal("Cannot open file %s\n",file3);
-   FILE* f4 = fopen(file4,"r");
-   if (!f4) Fatal("Cannot open file %s\n",file4);
 
    // Write elevation data for each point to the data array
-   for (int i=0; i<6178; i++) {
-       for (int j=0; j<6178; j++) {
-           if (i<1544) {if (fscanf(f1,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file1);}
-           else if (i<3089) {if (fscanf(f2,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file2);}
-           else if (i<4632) {if (fscanf(f3,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file3);}
-           else {if (fscanf(f4,"%f",&dem->data[j][i])!=1) Fatal("Error reading %s\n", file4);}
+   for (int i=0; i<DEM_W; i++) {
+       for (int j=0; j<DEM_W; j++) {
+           // Read first half of data from file 1
+           if (i < DEM_W/2) {
+               if (fscanf(f1,"%f",&data[i][j]) != 1) Fatal("Error reading %s\n", file1);
+           }
+           // Read second half of data from file 2
+           else {
+               if (fscanf(f2,"%f",&data[i][j]) != 1) Fatal("Error reading %s\n", file2);
+           }
 	   }
    }
 
    fclose(f1);
    fclose(f2);
-   fclose(f3);
-   fclose(f4);
 
    /* Populate triangles array */ //TODO: different sized triangles based on distance to camera
-   const int inc = 10; // Factor by which to decrease resolution
-   int t = 6178/inc; // Width of triangles //TODO: dem->width
+   const int inc = 8; // Factor by which to decrease resolution
+   int t = DEM_W/inc-1; // Width of triangles
 
    // Add elevation values from data
    for (int i=0; i<t; i++) {
        for (int j=0; j<t; j++) {
            int n = (i*t+j)*2;
-           float x = dem->pos[0] + j*inc;
-           float z = dem->pos[1] - i*inc;
+           float x = j*inc;
+           float z = -i*inc;
            // Bottom left triangle
            triangles[n].A.x = x;
-           triangles[n].A.y = dem->data[i*inc][j*inc];
+           triangles[n].A.y = data[i*inc][j*inc];
            triangles[n].A.z = z;
 
            triangles[n].B.x = x;
-           triangles[n].B.y = dem->data[(i+1)*inc][j*inc];
+           triangles[n].B.y = data[(i+1)*inc][j*inc];
            triangles[n].B.z = z-inc;
 
            triangles[n].C.x = x+inc;
-           triangles[n].C.y = dem->data[(i+1)*inc][(j+1)*inc];
+           triangles[n].C.y = data[(i+1)*inc][(j+1)*inc];
            triangles[n].C.z = z-inc;
 
            // Top right triangle
            triangles[n+1].A.x = x;
-           triangles[n+1].A.y = dem->data[i*inc][j*inc];
+           triangles[n+1].A.y = data[i*inc][j*inc];
            triangles[n+1].A.z = z;
 
            triangles[n+1].B.x = x+inc;
-           triangles[n+1].B.y = dem->data[(i+1)*inc][(j+1)*inc];
+           triangles[n+1].B.y = data[(i+1)*inc][(j+1)*inc];
            triangles[n+1].B.z = z-inc;
 
            triangles[n+1].C.x = x+inc;
-           triangles[n+1].C.y = dem->data[i*inc][(j+1)*inc];
+           triangles[n+1].C.y = data[i*inc][(j+1)*inc];
            triangles[n+1].C.z = z;
 
            for (int k=0; k<2; k++) {
@@ -262,16 +254,11 @@ void ReadDEM(char* file1, char* file2, char* file3, char* file4, DEM* dem) {
            }
        }
    }
-}
-
-/*
- * Free dynamically allocated memory for the DEM
- */
-void freeDEM(DEM* dem) {
-    for (int i = 0; i < 6178; i++) {
-        free(dem->data[i]);
+    // Free data array
+    for (int i = 0; i < DEM_W; i++) {
+        free(data[i]);
     }
-    free(dem->data);
+    free(data);
 }
 
 /*
@@ -281,10 +268,8 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     // Save transformation
     glPushMatrix();
     // Translate and Scale
-    // TODO: I really don't know why these have to be backwards
-//    glScaled(scale,scale,scale);
-//    glRotated(180,0,1,0);
-//    glTranslated(dx,dy,dz);
+    glScaled(scale,scale,scale);
+    // glTranslated(dx,dy,dz);
     // Enable Face Culling
     glEnable(GL_CULL_FACE);
 
@@ -294,12 +279,10 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     for (int i=0; i<3; i++) {
         F[i] = (C[i]-E[i]);
     }
-        float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
-        F[0] /= f_len;
-        F[1] /= f_len;
-        F[2] /= f_len;
-
-
+    float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
+    F[0] /= f_len;
+    F[1] /= f_len;
+    F[2] /= f_len;
 
     // Set Color Properties
     float black[]  = {0.0,0.0,0.0,1.0};
@@ -311,25 +294,16 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     int nt = sizeof(triangles)/sizeof(DEM_triangle);
     for (int i=0; i<nt; i++) {
         // Only draw triangle if the dot product between it and the forward vector > 0
-        // TODO: calculate centroid of triangle
-//        if ((triangles[i].A.x*F[0]+P[0]) + (triangles[i].A.y*F[1]+P[1]) + (triangles[i].A.z*F[2]+P[2]) < 0) continue;
         T[0] = triangles[i].A.x - E[0];
         T[1] = triangles[i].A.y - E[1];
         T[2] = triangles[i].A.z - E[2];
         if (F[0]*T[0] + F[1]*T[1] + F[2]*T[2] < 0) continue;
         // Face culling based on dot product of the forward vector and the normal vector
-//        float nl = sqrt(triangles[i].normal[0]*triangles[i].normal[0]+triangles[i].normal[1]*triangles[i].normal[1]+triangles[i].normal[2]*triangles[i].normal[2]);
-//        if (F[0]*triangles[i].normal[0]+F[1]*triangles[i].normal[1]+F[2]*triangles[i].normal[2] > 100) continue; // TODO: unsure why 100
+        // float nl = sqrt(triangles[i].normal[0]*triangles[i].normal[0]+triangles[i].normal[1]*triangles[i].normal[1]+triangles[i].normal[2]*triangles[i].normal[2]);
+        if (F[0]*triangles[i].normal[0]+F[1]*triangles[i].normal[1]+F[2]*triangles[i].normal[2] > 90) continue;
         // Set Normal and Color
         glNormal3f(triangles[i].normal[0],triangles[i].normal[1],triangles[i].normal[2]);
         glColor4f(triangles[i].rgba[0],triangles[i].rgba[1],triangles[i].rgba[2],triangles[i].rgba[3]);
-        //TODO: temp
-        if (i==nt/2) {
-            glColor4f(1,0,0,0);
-            glWindowPos2i(5,120);
-//            Print("tx: %.2f, ty: %.2f, tz: %.2f,", triangles[i].A.x+dx,triangles[i].A.y+dy,triangles[i].A.z+dz);
-            Print("T[0]: %.2f, T[1]: %.2f, T[2]: %.2f",T[0],T[1],T[2]);
-        }
 //        glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,triangles[i].rgba); // TODO: FPS drops substantially
         glBegin(GL_TRIANGLES);
             glVertex3f(triangles[i].C.x, triangles[i].C.y, triangles[i].C.z);
@@ -344,7 +318,6 @@ void drawDEM(double dx, double dy, double dz, double scale) {
     // Undo transformations
     glPopMatrix();
 }
-
 
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -372,7 +345,7 @@ void display() {
     float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
     float Specular[]  = {0.01*specular,0.01*specular,0.01*specular,1.0};
     //  Light position
-    float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
+    float Position[]  = {distance*Cos(l_th)+DEM_W/2,l_ph+3000,distance*Sin(l_th)-DEM_W/2,1.0};
     //  Draw light position as ball (still no lighting here)
     glColor3f(1,1,1);
     sphere(Position[0],Position[1],Position[2], 0.01*dim, 30);
@@ -394,14 +367,12 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-    const int center = 6178/2; // TODO: gore_range.width
-    drawDEM(-gore_range.pos[0]-center,-3500*ymag,gore_range.pos[1]+center,3);
+    drawDEM(0,-3500,0,1);
     glColor3f(1,1,1);
     glWindowPos2i(5,100);
     Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     glWindowPos2i(5,80);
     Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
@@ -490,16 +461,15 @@ void key(unsigned char ch,int x,int y) {
     switch (ch) {
         // ESC - Quit Program
         case 27:
-            freeDEM(&gore_range);
             exit(0);
-        // Reset View Angle
-        case '0':
-            th = -135;
-            // Eye position
-            E[0] = 1.5; E[1] = 1.5; E[2] = 1.5;
-            // Camera position for first person
-            C[0] = 0; C[1] = -1.5; C[2] = 0;
-            break;
+        // Reset View Angle TODO: reimplement
+        // case '0':
+        //     th = -135;
+        //     // Eye position
+        //     E[0] = 1.5; E[1] = 1.5; E[2] = 1.5;
+        //     // Camera position for first person
+        //     C[0] = 0; C[1] = -1.5; C[2] = 0;
+        //     break;
         // Toggle axes TODO: Remove in final product
         case 'x':
         case 'X':
@@ -616,16 +586,12 @@ static void idle(void) {
  */
 int main(int argc,char* argv[]) {
     // Set camera position
-    //TODO: temp
-//    E[0] = 0.66*dim;
-//    E[1] = 0.85*dim;
-//    E[2] = 0.66*dim;
-    E[0] = 3089;
-    E[1] = 3700;
-    E[2] = -3089;
+    E[0] = 2934;
+    E[1] = 3230;
+    E[2] = -1620;
     // Set light source position
     l_ph = 1.5*dim;
-    distance = 2*dim;
+    distance = 1.5*dim;
     //  Initialize GLUT
     glutInit(&argc,argv);
     //  Request double buffered, true color window with Z buffering at 600x600
@@ -642,16 +608,11 @@ int main(int argc,char* argv[]) {
     glutSpecialFunc(special);
     glutKeyboardFunc(key);
     glutIdleFunc(idle);
-    // TODO: Mouse control
-//    glutMouseFunc(mouse);
-//    glutMotionFunc(motion);
-    //  TODO: Load textures
     // Load DEM
-    ReadDEM("GoreRange1.dem","GoreRange2.dem","GoreRange3.dem","GoreRange4.dem",&gore_range);
+    ReadDEM("cirque1.dem","cirque2.dem");
 
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
-    freeDEM(&gore_range);
     return 0;
 }
