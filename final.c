@@ -692,11 +692,11 @@ void display() {
 
     /* Draw Digital Elevation Models */
     drawDEM(0,-3500,0,1);
-    glColor3f(1,1,1);
-    glWindowPos2i(5,100);
-    Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
-    glWindowPos2i(5,80);
-    Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
+    // glColor3f(1,1,1);
+    // glWindowPos2i(5,100);
+    // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
+    // glWindowPos2i(5,80);
+    // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
 
     summer();
     /* Draw axes */
