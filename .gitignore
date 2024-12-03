@@ -6,3 +6,4 @@ CMakeLists.txt
 *.a
 *.exe
 main
+convert
