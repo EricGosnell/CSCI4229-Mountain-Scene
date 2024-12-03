@@ -20,6 +20,7 @@
 int th = -135; // Azimuth of view angle
 double dt = 0; // Time step
 int axes = 1; // Toggle axes
+int polygon_count;
 
 /* First Person Camera Settings */
 int fov = 60; // Field of view
@@ -37,9 +38,15 @@ int emission    = 100;    // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph      = 2;    // Elevation of light
+float season = 0;
 
-float black[] = {0,0,0,1};
-float white[] = {1,1,1,1};
+
+const float black[] = {0,0,0,1};
+const float white[] = {1,1,1,1};
+const float pineTreeColors[][3] = {{0.1, 0.2, 0.03},{0.2, 0.4, 0.05},{0.3, 0.5, 0.1},{0.4, 0.6, 0.2},{0.5, 0.7, 0.3},{0.6, 0.8, 0.4}};
+const float aspentrunk[3] = {0.9f, 0.9f, 0.9f};
+
+
 
 /*
  *  Draw vertex in polar coordinates with normal
@@ -89,6 +96,7 @@ static void sphere(double x,double y,double z,double rx, double ry, double rz, d
       for (int th=0;th<=360;th+=2*inc) {
          Vertex(th,ph);
          Vertex(th,ph+inc);
+         polygon_count++;
       }
       glEnd();
    }
@@ -112,6 +120,7 @@ static void halfSphere(double x,double y,double z,double rx, double ry, double r
       for (int th=0;th<=360;th+=2*inc) {
          Vertex(th,ph);
          Vertex(th,ph+inc);
+         polygon_count++;
       }
       glEnd();
    }
@@ -138,28 +147,64 @@ static void halfSphere(double x,double y,double z,double rx, double ry, double r
     glVertex3f(0,.5,0);
     for(int th = 0; th <= 360; th+=2*inc){
         CylinderVertex(th,.5);
+        polygon_count++;
     }
     glEnd();
     glBegin(GL_QUAD_STRIP);
     for (int th=0;th<=360;th+=2*inc) {
         CylinderVertex(th,0);
         CylinderVertex(th,.5);
+        polygon_count++;
     }
     glEnd();
     glBegin(GL_TRIANGLE_FAN);
     glVertex3f(0,0,0);
     for(int th = 0; th <= 360; th+=2*inc){
         CylinderVertex(th,0);
+        polygon_count++;
     }
     glEnd();
     //  Undo transofrmations
     glPopMatrix();
 }
-
-static void rabbit(double dx, double dy, double dz, double x, double y, double z, double th){
+static void owl(double x, double y, double z, double dx, double dy, double dz, double th){
     glPushMatrix();
+
     glMaterialfv(GL_FRONT,GL_SPECULAR,white);
     glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
+    //adjust placement, rotation, scale
+    glTranslated(x,y,z);
+    glRotated(th,0,1,0);
+    glScaled(dx,dy,dz);
+
+    sphere(0,0,0,.20,.4,.2,0,0,-30,1,1,1);
+    
+    sphere(.23,.20,-.07,.02,.03,.03,30,0,0,0,0,0);
+    sphere(.23,.20,.07,.02,.03,.03,-30,0,0,0,0,0);
+    sphere(.24,.18,0,.03,.04,.015,0,0,0,0,0,0); //beak - change color!
+
+    sphere(-.08,-.08,.17,.15,.3,.05,0,0,-30,1,1,1);
+    sphere(-.08,-.08,-.17,.15,.3,.05,0,0,-30,1,1,1);
+
+    sphere(-.25,-.25,0,.05,.2,.05,0,0,-30,1,1,1);
+    sphere(-.25,-.25,-.05,.05,.2,.05,0,0,-30,1,1,1);
+    sphere(-.25,-.25,.05,.05,.2,.05,0,0,-30,1,1,1);
+    sphere(-.25,-.25,-.1,.05,.2,.05,15,0,-30,1,1,1);
+    sphere(-.25,-.25,.1,.05,.2,.05,-15,0,-30,1,1,1);
+
+    cylinder(0,-.4,.07, .025,.5,.025,0,0,0,15,1,1,1);
+    cylinder(0,-.4,-.07, .025,.5,.025,0,0,0,15,1,1,1);
+
+    glPopMatrix();
+
+}
+static void rabbit(double x, double y, double z, double dx, double dy, double dz, double th){
+    glPushMatrix();
+
+    glMaterialfv(GL_FRONT,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
     //adjust placement, rotation, scale
     glTranslated(x,y,z);
     glRotated(th,0,1,0);
@@ -208,10 +253,12 @@ static void deerHead(double x, double y, double z){
     sphere(.15,.9,1.38,.04,.04,.04,0,30,0,0 , 0, 0); // right eye
     sphere(-.15,.9,1.38,.04,.04,.04,0,30,0,0, 0, 0); // left eye
 }
-static void deer(double dx, double dy, double dz, double x, double y, double z, double th){
+static void deer(double x, double y, double z, double dx, double dy, double dz, double th){
     glPushMatrix();
+
     glMaterialfv(GL_FRONT,GL_SPECULAR,white);
     glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
     //adjust placement, rotation, scale
     glTranslated(x,y,z);
     glRotated(th,0,1,0);
@@ -236,10 +283,109 @@ static void deer(double dx, double dy, double dz, double x, double y, double z, 
 
     glPopMatrix();
 }
+static void triangle(double x, double y, double z, double dx, double dy, double dz, double thx, double thy, double thz){
+    glTranslated(x,y,z);
+    glRotated(thx,1,0,0);
+    glRotated(thy,0,1,0);
+    glRotated(thz,0,0,1);
+    glScaled(dx,dy,dz);
+    glNormal3d(1,0,0);
+    glBegin(GL_TRIANGLES);
+    glVertex3d(0,0,1);
+    glVertex3d(0,0,-1);
+    glVertex3d(0,1,0);
+    glEnd();
+}
+static void makeBranch(int depth, int th){
+    if(depth < 3){
+        glPushMatrix();
+        glTranslated(0,.33,0);
+        glRotated(30+(depth*5),0,0,1);
+        glRotated(th,0,1,0);
+        glScaled(.8,.7,.8);
+
+        for(int th = 0; th < 360; th+=120){
+            glPushMatrix();
+            glRotated(th,0,1,0);
+            makeBranch(depth+1,th);
+            glPopMatrix();
+        }
+        cylinder(0,0,0,.025,1,.025,0,0,0,30,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
+        if(depth >= 1){
+            for(int th = 0; th < 360; th+=90){
+            glPushMatrix();
+            glRotated(th,0,1,0);
+            glColor3f(pineTreeColors[3][0],pineTreeColors[3][1],pineTreeColors[3][2]);
+            triangle(0,.33,0,.3,.3,.3,0,0,0);
+            glPopMatrix();
+        }
+        }
+        glPopMatrix();
+    }
+
+}
+static void aspenTree(double x, double y, double z, double dx, double dy, double dz){
+    glPushMatrix();
+
+    glMaterialfv(GL_FRONT,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
+    //adjust placement, rotation, scale
+    glTranslated(x,y,z);
+    glScaled(dx,dy,dz);
+
+    cylinder(0,0,0,.025,1.5,.025,0,0,0,15,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
+    for(int th = 0; th < 360; th+=90){
+        glPushMatrix();
+        glRotated(th,0,1,0);
+        makeBranch(0,th);
+        glPopMatrix();
+    }
+
+    glPopMatrix();
+}
+static void PineTree(double x, double y, double z, double dx, double dy, double dz){
+    glPushMatrix();
+
+    glMaterialfv(GL_FRONT,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
+    //adjust placement, rotation, scale
+    glTranslated(x,y,z);
+    glScaled(dx,dy,dz);
+    cylinder(0,0,0,.015,.75,.015,0,0,0,30,0.55, 0.27, 0.07);
+    double needleLength = .3;
+    double height = .2;
+    for(int i = 1; i < 7; i+=1){
+        height += (.055 - (i*.005));
+        needleLength-=.035;
+        glColor3f(pineTreeColors[i-1][0],pineTreeColors[i-1][1],pineTreeColors[i-1][2]);
+        for(int th = 0; th<360; th+=5){
+            glPushMatrix();
+            glTranslated(0,height,0);
+            glRotated(th,0,1,0);
+                glPushMatrix();
+                glRotated(130,0,0,1);
+                glScaled(.01,needleLength,.01);
+                glBegin(GL_TRIANGLES);
+                glVertex3d(0,0,1);
+                glVertex3d(0,0,-1);
+                glVertex3d(0,1,0);
+                glEnd();
+                glPopMatrix();
+            glPopMatrix();
+        }    
+    }
+    glPopMatrix();
+
+
+    
+}
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
  */
 void display() {
+    polygon_count = 0;
     //  Erase the window and the depth buffer
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     //  Enable Z-buffering in OpenGL
@@ -284,8 +430,9 @@ void display() {
     glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
-    deer(.2,.2,.2,0,.3,0,0);
-    rabbit(.1,.1,.1,.5,0,0,0);
+
+    aspenTree(0,0,0,.5,.5,.5);
+    PineTree(.5,0,.5,1,1,1);
 
     /* Draw axes */
     glDisable(GL_LIGHTING);
@@ -313,11 +460,13 @@ void display() {
     // Display parameters
     glWindowPos2i(5,5);
     Print("X: %.1f, Y: %.1f, Z: %.1f, Dim: %.0f",E[0],E[1],E[2],dim);
+    glWindowPos2i(5,25);
+    Print("Polygon Count: %d",polygon_count);
 
     //  Render the scene and make it visible
     ErrCheck("display");
     glFlush();
-    glutSwapBuffers();
+    glutSwapBuffers(); 
 }
 
 /*
@@ -471,6 +620,7 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
     l_th = fmod(t*90,360);
+    season = t;
 
     // Tell GLUT it is necessary to redisplay the scene
     glutPostRedisplay();
