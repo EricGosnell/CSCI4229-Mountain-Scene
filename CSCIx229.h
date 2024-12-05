@@ -62,6 +62,37 @@ unsigned int LoadTexBMP(const char* file);
 void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
+void ReadDEM(char *file1, char *file2);
+void DrawDEM(double dx, double dy, double dz, double scale);
+void sphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
+void halfSphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
+void cylinder(double x,double y,double z,double dx, double dy, double dz, double thx, double thy, double thz, int inc, float r, float g, float b);
+void triangle(double x, double y, double z, double dx, double dy, double dz, double thx, double thy, double thz);
+void owl(double x, double y, double z, double dx, double dy, double dz, double th);
+void rabbit(double x, double y, double z, double dx, double dy, double dz, double th);
+void deer(double x, double y, double z, double dx, double dy, double dz, double th);
+void aspenTree(double x, double y, double z, double dx, double dy, double dz);
+void PineTree(double x, double y, double z, double dx, double dy, double dz);
+
+#define DEM_W 4096 // Width of the DEM
+#define DEM_R 8 // Factor by which to reduce resolution
+
+typedef struct {
+    float x, y, z;
+} vtx;
+
+typedef struct {
+    vtx A, B, C;
+    float rgba[4];
+    float normal[3];
+} DEM_triangle; // Triangle used in drawing the terrain
+
+extern float** data;
+extern DEM_triangle triangles[524288];
+extern int polygon_count;
+extern double E[3];
+extern double C[3];
+
 
 #ifdef __cplusplus
 }
