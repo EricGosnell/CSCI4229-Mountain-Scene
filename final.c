@@ -112,7 +112,7 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-    DrawDEM(0,-3500,0,1);
+    // DrawDEM(0,-3500,0,1);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);

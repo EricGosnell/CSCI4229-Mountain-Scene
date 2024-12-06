@@ -1,187 +1,172 @@
 #include "CSCIx229.h"
 
 /* Global Variables */
-float **data; // Elevation Data
-DEM_triangle triangles[524288]; // 2*(4096/8)^2
-
-/*
- * Linearly interpolates between two colors
- */
-void interpolateColor(const GLfloat color1[3], const GLfloat color2[3], const float t, GLfloat result[3]) {
-    for (int i = 0; i < 3; i++) {
-        result[i] = (1.0f - t) * color1[i] + t * color2[i];
-    }
-}
+vtx vertices[65536]; // Vertex list
+unsigned int indices[393216]; // 3 indices per triangle
 
 /*
  * Define the color of each triangle based on slope angle, slope aspect, and elevation. Linear interpolation
  * is used to transition between different zones, such as between tundra and exposed stone.
  *
- * TODO: explain all color transitions and values
+ * TODO: explain all color transitions and values and update comments
  */
-static void getColor(const float slope_angle, const float orientation, DEM_triangle *tri) {
-    float elevation = (tri->A.y + tri->B.y + tri->C.y) / 3; // Average elevation of triangle
+
+static void getColor(const float slope_angle, const float slope_aspect, const int index) {
     float t; // Color interpolation value
+    // Calculate average elevation of the triangle starting at index
+    const float elevation = (vertices[indices[index]].y + vertices[indices[index+1]].y + vertices[indices[index+2]].y) / 3.0f;
 
     // Colors
-    const GLfloat forest[] = {0.13f, 0.35f, 0.13f}; // Dark forest green
-    const GLfloat tundra[] = {0.53f, 0.55f, 0.46f}; // Tundra greenish grey
-    const GLfloat dirtStone[] = {0.6f, 0.5f, 0.4f}; // Exposed dirt and stone
-    const GLfloat snow[] = {0.8f, 0.8f, 0.8f}; // Snow
+    const GLubyte forest[] = {33, 90, 33}; // Dark forest green
+    const GLubyte tundra[] = {136, 141, 118}; // Tundra greenish grey
+    const GLubyte dirtStone[] = {154, 128, 102}; // Exposed dirt and stone
+    const GLfloat snow[] = {205, 205, 205}; // Snow
 
     if (elevation <= 3000.0f) {
         // Below 3000, use dark forest green
-        for (int i = 0; i < 3; i++) tri->rgba[i] = forest[i];
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = forest[j];
+            }
+        }
     } else if (elevation >= 3700.0f) {
         // Above 4000, use dirt/stone tri->rgba
-        for (int i = 0; i < 3; i++) tri->rgba[i] = dirtStone[i];
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = dirtStone[j];
+            }
+        }
     } else if (elevation < 3300.0f) {
         // Smooth transition between dark forest green and tundra green/grey (3000 to 3500)
         t = (elevation - 3000.0f) / 300.0f;
-        interpolateColor(forest, tundra, t, tri->rgba);
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = (1-t)*forest[j] + t*tundra[j];
+            }
+        }
     } else {
         // Smooth transition between tundra green/grey and dirt/stone (3500 to 4000)
         t = (elevation - 3300.0f) / 400.0f;
-        interpolateColor(tundra, dirtStone, t, tri->rgba);
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = (1-t)*tundra[j] + t*dirtStone[j];
+            }
+        }
     }
 
     // Darken steeper slopes
     if (slope_angle > 30) {
         const float darkeningFactor = 1.0f - ((slope_angle - 30) / 60.0f);
-        for (int i = 0; i < 3; i++) {
-            tri->rgba[i] *= darkeningFactor;
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] *= darkeningFactor;
+            }
         }
     }
+
     // Snow
-    if (slope_angle < 55 && (orientation > 270 || orientation < 90 || elevation > 3600)) {
+    if (slope_angle < 55 && (slope_aspect > 270 || slope_aspect < 90 || elevation > 3600)) {
         if (elevation > 3350) {
             // Smooth transition between dirt/stone and snow (3700 to 3800)
             t = (elevation - 3350.0f) / 100.0f;
-            interpolateColor(tundra, snow, t, tri->rgba);
+            for (int i = index; i < index+3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    vertices[indices[i]].rgb[j] = (1-t)*dirtStone[j] + t*snow[j];
+                }
+            }
         }
     }
 
     // Lakes
     if (slope_angle == 0) {
-        tri->rgba[0] = 0;
-        tri->rgba[1] = 0.4f;
-        tri->rgba[2] = 0.6f;
+        const GLubyte lake[] = {0, 102, 154};
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = lake[j];
+            }
+        }
     }
+}
 
-    // Set alpha value to 1
-    tri->rgba[3] = 1;
+
+/*
+ * Read in elevation data from the .dem files, and populate the vertices array.
+ */
+static void readFile(const char *fileName, int start, int end) {
+    FILE *file = fopen(fileName, "r");
+    if (!file) Fatal("Cannot open file %s\n", fileName);
+    float fy;
+    for (int i = start; i < end; i++) {
+        if (fscanf(file, "%f", &fy) != 1) Fatal("Error reading file %s\n", fileName);
+        if ((i/DEM_W)%DEM_R == 0 && (i%DEM_W) % DEM_R == 0) {
+            int index = ((i/DEM_W)/DEM_R) * (DEM_W/DEM_R) + (i%DEM_W)/DEM_R;
+            if (index < (DEM_W/DEM_R)*(DEM_W/DEM_R)) {
+                vertices[index].x = i/DEM_W;
+                vertices[index].y = fy;
+                vertices[index].z = i%DEM_W;
+            }
+        }
+    }
+    fclose(file);
 }
 
 /*
- *  Read 1 meter DEM from the 4 corresponding files
+ *  Read 1 meter DEM from the 2 corresponding files and calculate the color and normals.
  */
-void ReadDEM(char *file1, char *file2) {
-    // Initialize data array
-    data = malloc(DEM_W * sizeof(float *));
-    for (int i = 0; i < DEM_W; i++) {
-        data[i] = malloc(DEM_W * sizeof(float));
-    }
+void ReadDEM(const char *file1, const char *file2) {
+    /* Read in data from files */
+    readFile(file1,0,DEM_W*DEM_W/2);
+    readFile(file2,DEM_W*DEM_W/2,DEM_W*DEM_W);
 
-    // Read in data from files
-    FILE *f1 = fopen(file1, "r");
-    if (!f1) Fatal("Cannot open file %s\n", file1);
-    FILE *f2 = fopen(file2, "r");
-    if (!f2) Fatal("Cannot open file %s\n", file2);
-
-    // Write elevation data for each point to the data array
-    for (int i = 0; i < DEM_W; i++) {
-        for (int j = 0; j < DEM_W; j++) {
-            // Read first half of data from file 1
-            if (i < DEM_W / 2) {
-                if (fscanf(f1, "%f", &data[i][j]) != 1) Fatal("Error reading %s\n", file1);
-            }
-            // Read second half of data from file 2
-            else {
-                if (fscanf(f2, "%f", &data[i][j]) != 1) Fatal("Error reading %s\n", file2);
-            }
+    /* Populate indices array */
+    int n = 0;
+    for (int i = 0; i < DEM_W/DEM_R - 1; i++) {
+        for (int j = 0; j < DEM_W/DEM_R - 1; j++) {
+            const unsigned int cell = i * DEM_W/DEM_R + j;
+            // Bottom Left Triangle
+            indices[n++] = cell;
+            indices[n++] = cell+DEM_W/DEM_R;
+            indices[n++] = cell+DEM_W/DEM_R + 1;
+            // Top Right Triangle
+            indices[n++] = cell;
+            indices[n++] = cell+DEM_W/DEM_R + 1;
+            indices[n++] = cell+1;
         }
     }
 
-    fclose(f1);
-    fclose(f2);
-
-    /* Populate triangles array */ //TODO: different sized triangles based on distance to camera
-    const int inc = 8; // Factor by which to decrease resolution
-    int t = DEM_W / inc - 1; // Width of triangles
-
-    // Add elevation values from data
-    for (int i = 0; i < t; i++) {
-        for (int j = 0; j < t; j++) {
-            const int n = (i * t + j) * 2;
-            const float x = j * inc;
-            const float z = -i * inc;
-            // Bottom left triangle
-            triangles[n].A.x = x;
-            triangles[n].A.y = data[i * inc][j * inc];
-            triangles[n].A.z = z;
-
-            triangles[n].B.x = x;
-            triangles[n].B.y = data[(i + 1) * inc][j * inc];
-            triangles[n].B.z = z - inc;
-
-            triangles[n].C.x = x + inc;
-            triangles[n].C.y = data[(i + 1) * inc][(j + 1) * inc];
-            triangles[n].C.z = z - inc;
-
-            // Top right triangle
-            triangles[n + 1].A.x = x;
-            triangles[n + 1].A.y = data[i * inc][j * inc];
-            triangles[n + 1].A.z = z;
-
-            triangles[n + 1].B.x = x + inc;
-            triangles[n + 1].B.y = data[(i + 1) * inc][(j + 1) * inc];
-            triangles[n + 1].B.z = z - inc;
-
-            triangles[n + 1].C.x = x + inc;
-            triangles[n + 1].C.y = data[i * inc][(j + 1) * inc];
-            triangles[n + 1].C.z = z;
-
-            for (int k = 0; k < 2; k++) {
-                // Calculate normal vector
-                const float Nx = (triangles[n + k].A.y - triangles[n + k].B.y) * (triangles[n + k].C.z - triangles[n + k].A.z)
-                                 -
-                                 (triangles[n + k].C.y - triangles[n + k].A.y) * (
-                                     triangles[n + k].A.z - triangles[n + k].B.z);
-                float Ny = (triangles[n + k].A.z - triangles[n + k].B.z) * (triangles[n + k].C.x - triangles[n + k].A.x)
-                           -
-                           (triangles[n + k].C.z - triangles[n + k].A.z) * (
-                               triangles[n + k].A.x - triangles[n + k].B.x);
-                const float Nz = (triangles[n + k].A.x - triangles[n + k].B.x) * (triangles[n + k].C.y - triangles[n + k].A.y)
-                                 -
-                                 (triangles[n + k].C.x - triangles[n + k].A.x) * (
-                                     triangles[n + k].A.y - triangles[n + k].B.y);
-                // Add normal vector to triangle
-                triangles[n + k].normal[0] = Nx;
-                triangles[n + k].normal[1] = Ny;
-                triangles[n + k].normal[2] = Nz;
-                // Normalize the normal vector vertical component
-                const float length = sqrt(Nx * Nx + Ny * Ny + Nz * Nz);
-                Ny /= length;
-                // Calculate slope angle
-                const float slope_angle = acos(Ny) * (180 / M_PI);
-                // Calculate orientation
-                float orientation = atan2(-Nz, -Nx) * (180 / M_PI);
-                if (orientation < 0) orientation += 360;
-                // Set color based on slope angle, orientation, and elevation
-                getColor(slope_angle, orientation, &triangles[n + k]);
+    /* Calculate color and normals for each triangle */
+    for (int i = 0; i < sizeof(indices) / sizeof(indices[0]); i += 3) {
+        // Calculate normal vector
+        float N[3];
+        N[0] = (vertices[indices[i]].y - vertices[indices[i+1]].y) * (vertices[indices[i+2]].z - vertices[indices[i]].z)
+            - (vertices[indices[i+2]].y - vertices[indices[i]].y) * (vertices[indices[i]].z - vertices[indices[i+1]].z);
+        N[1] = (vertices[indices[i]].z - vertices[indices[i+1]].z) * (vertices[indices[i+2]].x - vertices[indices[i]].x)
+            - (vertices[indices[i+2]].z - vertices[indices[i]].z) * (vertices[indices[i]].x - vertices[indices[i+1]].x);
+        N[2] = (vertices[indices[i]].x - vertices[indices[i+1]].x) * (vertices[indices[i+2]].y - vertices[indices[i]].y)
+            - (vertices[indices[i+2]].x - vertices[indices[i]].x) * (vertices[indices[i]].y - vertices[indices[i+1]].y);
+        // Add normal vector to each vertex of the triangle
+        for (int j = i; j < i+3; j++) {
+            for (int k = 0; k < 3; k++) {
+                vertices[indices[j]].normal[k] = N[k];
             }
         }
+        // Normalize the normal vector vertical component
+        const float length = sqrtf(N[0] * N[0] + N[1] * N[1] + N[2] * N[2]);
+        N[1] /= length;
+        // Calculate slope angle
+        const float slope_angle = acosf(N[1]) * (180 / M_PI);
+        // Calculate slope aspect
+        float slope_aspect = atan2f(-N[2], -N[0]) * (180 / M_PI);
+        if (slope_aspect < 0) slope_aspect += 360;
+        // Set color based on slope angle, slope aspect, and elevation
+        getColor(slope_angle, slope_aspect, i);
     }
-    // Free data array
-    for (int i = 0; i < DEM_W; i++) {
-        free(data[i]);
-    }
-    free(data);
 }
 
 /*
  *  Draw 1 meter DEM Wireframe
  */
+/*
 void DrawDEM(double dx, double dy, double dz, double scale) {
     // Save transformation
     glPushMatrix();
@@ -237,3 +222,4 @@ void DrawDEM(double dx, double dy, double dz, double scale) {
     // Undo transformations
     glPopMatrix();
 }
+*/

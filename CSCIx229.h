@@ -62,7 +62,7 @@ unsigned int LoadTexBMP(const char* file);
 void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
-void ReadDEM(char *file1, char *file2);
+void ReadDEM(const char *file1, const char *file2);
 void DrawDEM(double dx, double dy, double dz, double scale);
 void sphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
 void halfSphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
@@ -75,20 +75,16 @@ void aspenTree(double x, double y, double z, double dx, double dy, double dz);
 void PineTree(double x, double y, double z, double dx, double dy, double dz);
 
 #define DEM_W 4096 // Width of the DEM
-#define DEM_R 8 // Factor by which to reduce resolution
+#define DEM_R 16 // Factor by which to reduce resolution
 
 typedef struct {
-    float x, y, z;
-} vtx;
+    GLfloat x, y, z;
+    GLubyte rgb[3];
+    GLfloat normal[3];
+} vtx; // Triangle used in drawing the terrain
 
-typedef struct {
-    vtx A, B, C;
-    float rgba[4];
-    float normal[3];
-} DEM_triangle; // Triangle used in drawing the terrain
-
-extern float** data;
-extern DEM_triangle triangles[524288];
+extern vtx vertices[65536];
+extern unsigned int indices[393216];
 extern int polygon_count;
 extern double E[3];
 extern double C[3];
