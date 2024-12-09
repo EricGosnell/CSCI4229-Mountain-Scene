@@ -133,31 +133,57 @@ static void makeBranch(int depth, int th){
     if(depth < 3){
         glPushMatrix();
         glTranslated(0,.33,0);
-        glRotated(30+(depth*5),0,0,1);
+        glRotated(30-(depth*5),0,0,1);
         glRotated(th,0,1,0);
-        glScaled(.8,.7,.8);
+        glScaled(.5,.7,.5);
 
-        for(int th = 0; th < 360; th+=120){
+        for(int angle = 0; angle < 360; angle +=120){
             glPushMatrix();
-            glRotated(th,0,1,0);
-            makeBranch(depth+1,th);
+            glRotated(angle,0,1,0);
+            makeBranch(depth+1,angle);
             glPopMatrix();
         }
         cylinder(0,0,0,.025,1,.025,0,0,0,30,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
         if(depth >= 1 && season != 4){
             for(int th = 0; th < 360; th+=90){
-            glPushMatrix();
-            glRotated(th,0,1,0);
             if(season == 1 || season == 2){
             glColor3f(pineTreeColors[3][0],pineTreeColors[3][1],pineTreeColors[3][2]);
             }
             else{
             glColor3f(0.9f, 0.7f, 0.0f);
             }
-            triangle(0,.33,0,.3,.3,.3,0,0,0);
+            glPushMatrix();
+            glTranslated(0,.33*(depth),0);
+            glRotated(th,0,1,0);
+            glScaled(.3,.3,.3);
+            triangle(0,0,0,1,1,1,0,0,45);
+            triangle(0,0,0,1,1,1,0,0,-45);
+            triangle(0,0,0,1,1,1,0,90,45);
+            triangle(0,0,0,1,1,1,0,-90,45);
+
+            triangle(0,-.5,0,.7,1,.7,0,0+45,45+45);
+            triangle(0,-.5,0,.7,1,.7,0,0+45,-45+45);
+            triangle(0,-.5,0,.7,.7,.7,0,90+45,45+45);
+            triangle(0,-.5,0,.7,1,.7,0,-90+45,45+45);
+
+
             glPopMatrix();
         }
         }
+        glPopMatrix();
+        glPushMatrix();
+        glTranslated(0,.5,0);
+        glRotated(15-(depth*5),0,0,1);
+        glRotated(th,0,1,0);
+        glScaled(.5,.7,.5);
+
+        for(int angle = 0;angle < 360; angle+=120){
+            glPushMatrix();
+            glRotated(angle,0,1,0);
+            makeBranch(depth+1,th);
+            glPopMatrix();
+        }
+        cylinder(0,0,0,.025,1,.025,0,0,0,30,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
         glPopMatrix();
     }
 
@@ -173,7 +199,7 @@ void aspenTree(double x, double y, double z, double dx, double dy, double dz){
     glTranslated(x,y,z);
     glScaled(dx,dy,dz);
 
-    cylinder(0,0,0,.025,1.5,.025,0,0,0,15,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
+    cylinder(0,-.2,0,.015,1.5,.015,0,0,0,15,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
     for(int th = 0; th < 360; th+=90){
         glPushMatrix();
         glRotated(th,0,1,0);

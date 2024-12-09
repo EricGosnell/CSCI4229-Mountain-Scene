@@ -120,6 +120,7 @@ void cylinder(double x,double y,double z,double dx, double dy, double dz, double
 }
 
 void triangle(double x, double y, double z, double dx, double dy, double dz, double thx, double thy, double thz) {
+   glPushMatrix();
    glTranslated(x,y,z);
    glRotated(thx,1,0,0);
    glRotated(thy,0,1,0);
@@ -131,4 +132,5 @@ void triangle(double x, double y, double z, double dx, double dy, double dz, dou
    glVertex3d(0,0,-1);
    glVertex3d(0,1,0);
    glEnd();
+   glPopMatrix();
 }
