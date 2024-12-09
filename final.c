@@ -30,7 +30,7 @@ int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
 double E[3]; // Eye position for first person (Position you're at)
-double C[3] = {2067,3100,-2120}; // Camera position for first person (Position you're looking at)
+double C[3] = {0,-100,0}; // Camera position for first person (Position you're looking at)
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -93,7 +93,7 @@ void display() {
     glMaterialf(GL_FRONT,GL_SHININESS,shiny);
     glMaterialfv(GL_FRONT,GL_SPECULAR,yellow);
     glMaterialfv(GL_FRONT,GL_EMISSION,Emission);
-    sphere(Position[0],Position[1],Position[2], 0.1, 0.1,0.1,0,0,0,1,1,1);
+    sphere(Position[0],Position[1],Position[2], 10, 10,10,0,0,0,1,1,1);
     //  OpenGL should normalize normal vectors
     glEnable(GL_NORMALIZE);
     //  Enable lighting
@@ -112,14 +112,16 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-    DrawDEM(0,-3500,0,1);
+    //DrawDEM(0,-3500,0,1);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
 
-    summer();
+    //deer(0,0,0,100,100,100,0);
+    //summer();
+    blackBear(0,0,0,100,100,100,0);
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -345,9 +347,9 @@ static void idle(void) {
  */
 int main(int argc,char* argv[]) {
     // Set camera position
-    E[0] = 2934;
-    E[1] = 3230;
-    E[2] = -1620;
+    E[0] = 100;
+    E[1] = 100;
+    E[2] = 100;
     // Set light source position
     l_ph = 1.5*dim;
     distance = 1.5*dim;
@@ -368,7 +370,7 @@ int main(int argc,char* argv[]) {
     glutKeyboardFunc(key);
     glutIdleFunc(idle);
     // Load DEM
-    ReadDEM("cirque1.dem","cirque2.dem");
+    //ReadDEM("cirque1.dem","cirque2.dem");
 
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");

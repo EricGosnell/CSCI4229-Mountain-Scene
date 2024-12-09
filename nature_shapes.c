@@ -128,6 +128,42 @@ void deer(double x, double y, double z, double dx, double dy, double dz, double 
 
     glPopMatrix();
 }
+void blackBear(double x, double y, double z, double dx, double dy, double dz, double th){
+    glPushMatrix();
+
+    glMaterialfv(GL_FRONT,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT,GL_EMISSION,black);
+
+    //adjust placement, rotation, scale
+    glTranslated(x,y,z);
+    glRotated(th,0,1,0);
+    glScaled(dx,dy,dz);
+
+    sphere(0,0,0,1.5,1,1,0,0,0,0.294, 0.235, 0.192);
+    sphere(-.8,.2,0,.9,.9,.9,0,0,0,0.294, 0.235, 0.192);
+    sphere(.8,.3,0,1,.9,1,0,0,0,0.294, 0.235, 0.192);
+
+    sphere(-1.2,-.5,.7,.5,1.3,.4,0,0,-5,0.294, 0.235, 0.192);
+    sphere(-1.2,-.5,-.7,.5,1.3,.4,0,0,-5,0.294, 0.235, 0.192);
+    sphere(1,-.7,-.6,.4,1.1,.4,0,0,2,0.294, 0.235, 0.192);
+    sphere(1,-.7,.6,.4,1.1,.4,0,0,2,0.294, 0.235, 0.192);
+
+    sphere(1.25,-1.6,.6,.3,.2,.3,0,0,2,0.294, 0.235, 0.192);
+    sphere(1.25,-1.6,-.6,.3,.2,.3,0,0,2,0.294, 0.235, 0.192);
+    sphere(-1.2,-1.6,.7,.4,.2,.3,0,0,2,0.294, 0.235, 0.192);
+    sphere(-1.2,-1.6,-.7,.4,.2,.3,0,0,2,0.294, 0.235, 0.192);
+
+    sphere(1.8,.5,0,.7,.65,.65,0,0,0,0.294, 0.235, 0.192);
+    sphere(2.2,.3,0,.6,.3,.3,0,0,-15,0.627, 0.466, 0.314);
+    halfSphere(2.7,.3,0,.1, .07,.1,0,-90,0,0,0,0); //nose
+    halfSphere(2.43,.53,-.17,.06,.06,.06,0,-90,0,0,0,0);
+    halfSphere(2.43,.53,.17,.06,.06,.06,0,-90,0,0,0,0);
+
+    halfSphere(2.1,1,.4,.15,.25,.2,0,90,0,0.294, 0.235, 0.192);
+    halfSphere(2.1,1,-.4,.15,.25,.2,0,90,0,0.294, 0.235, 0.192);
+
+    glPopMatrix();
+}
 
 static void makeBranch(int depth, int th){
     if(depth < 3){
