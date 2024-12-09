@@ -74,7 +74,7 @@ void deer(double x, double y, double z, double dx, double dy, double dz, double 
 void aspenTree(double x, double y, double z, double dx, double dy, double dz);
 void PineTree(double x, double y, double z, double dx, double dy, double dz);
 void blackBear(double x, double y, double z, double dx, double dy, double dz, double th);
-
+void standingBlackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 
 #define DEM_W 4096 // Width of the DEM
 #define DEM_R 8 // Factor by which to reduce resolution

@@ -122,6 +122,7 @@ void display() {
     //deer(0,0,0,100,100,100,0);
     //summer();
     blackBear(0,0,0,100,100,100,0);
+    standingBlackBear(0,0,300,100,100,100,0);
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
