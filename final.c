@@ -23,6 +23,7 @@ int polygon_count = 0; // Total number of polygons
 int frame_count = 0; // Frame count
 int t0 = 0; // Initial time for measuring FPS
 float fps = -1; // Starting value for FPS
+GLuint vbo, ebo; // Vertex Buffer Object and Element Buffer Object
 
 /* First Person Camera Settings */
 int th = -135; // Azimuth of view angle
@@ -30,7 +31,7 @@ int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
 double E[3]; // Eye position for first person (Position you're at)
-double C[3] = {2067,3100,-2120}; // Camera position for first person (Position you're looking at)
+double C[3] = {0,100,0}; // Camera position for first person (Position you're looking at)
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -78,14 +79,14 @@ void display() {
     gluLookAt(E[0],E[1],E[2], C[0],C[1],C[2], 0,1,0);
 
     /* Set lighting values and create light source */
-    glShadeModel(GL_SMOOTH);
-//    glShadeModel(GL_FLAT);
+    // glShadeModel(GL_SMOOTH);
+    glShadeModel(GL_FLAT);
     //  Translate intensity to color vectors
     float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
     float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
     float Specular[]  = {0.01*specular,0.01*specular,0.01*specular,1.0};
     //  Light position
-    float Position[]  = {distance*Cos(l_th)+DEM_W/2,l_ph+3000,distance*Sin(l_th)-DEM_W/2,1.0};
+    float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
     //  Draw light position as ball (still no lighting here)
      //  White ball with yellow specular
     float yellow[]   = {1.0,1.0,0.0,1.0};
@@ -93,7 +94,7 @@ void display() {
     glMaterialf(GL_FRONT,GL_SHININESS,shiny);
     glMaterialfv(GL_FRONT,GL_SPECULAR,yellow);
     glMaterialfv(GL_FRONT,GL_EMISSION,Emission);
-    sphere(Position[0],Position[1],Position[2], 0.1, 0.1,0.1,0,0,0,1,1,1);
+    sphere(Position[0],Position[1],Position[2], 10, 10,10,0,0,0,1,1,1);
     //  OpenGL should normalize normal vectors
     glEnable(GL_NORMALIZE);
     //  Enable lighting
@@ -112,14 +113,16 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw Digital Elevation Models */
-    DrawDEM(0,-3500,0,1);
+    // glDisable(GL_LIGHTING);
+    DrawDEM(0,0,0,3);
+    // glEnable(GL_LIGHTING);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
 
-    summer();
+    // summer();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -208,6 +211,9 @@ void key(unsigned char ch,int x,int y) {
     switch (ch) {
         // ESC - Quit Program
         case 27:
+            // Clean up VBO
+            glDeleteBuffers(1,&vbo);
+            glDeleteBuffers(1,&ebo);
             exit(0);
         // Reset View Angle TODO: reimplement
         // case '0':
@@ -345,9 +351,9 @@ static void idle(void) {
  */
 int main(int argc,char* argv[]) {
     // Set camera position
-    E[0] = 2934;
-    E[1] = 3230;
-    E[2] = -1620;
+    E[0] = 180;
+    E[1] = 530;
+    E[2] = 2710;
     // Set light source position
     l_ph = 1.5*dim;
     distance = 1.5*dim;
@@ -373,5 +379,9 @@ int main(int argc,char* argv[]) {
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
+
+    // Clean up VBO
+    glDeleteBuffers(1,&vbo);
+    glDeleteBuffers(1,&ebo);
     return 0;
 }
