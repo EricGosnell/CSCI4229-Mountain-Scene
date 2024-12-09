@@ -31,7 +31,8 @@ int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
 double E[3]; // Eye position for first person (Position you're at)
-double C[3] = {0,100,0}; // Camera position for first person (Position you're looking at)
+double C[3] = {0,-100,0}; // Camera position for first person (Position you're looking at)
+
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -122,7 +123,7 @@ void display() {
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
 
-    // summer();
+    summer();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
