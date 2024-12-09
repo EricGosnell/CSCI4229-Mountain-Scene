@@ -75,19 +75,20 @@ void aspenTree(double x, double y, double z, double dx, double dy, double dz);
 void PineTree(double x, double y, double z, double dx, double dy, double dz);
 
 #define DEM_W 4096 // Width of the DEM
-#define DEM_R 16 // Factor by which to reduce resolution
+#define DEM_R 2 // Factor by which to reduce resolution
 
 typedef struct {
     GLfloat x, y, z;
-    GLubyte rgb[3];
+    GLfloat rgb[3];
     GLfloat normal[3];
 } vtx; // Triangle used in drawing the terrain
 
-extern vtx vertices[65536];
-extern unsigned int indices[393216];
+extern vtx vertices[4194304];
+extern unsigned int indices[25165824];
 extern int polygon_count;
 extern double E[3];
 extern double C[3];
+extern GLuint vbo, ebo;
 
 
 #ifdef __cplusplus
