@@ -1,7 +1,5 @@
 #include "CSCIx229.h"
 
-extern float season;
-
 const float black[] = {0,0,0,1};
 const float white[] = {1,1,1,1};
 const float pineTreeColors[][3] = {{0.1, 0.2, 0.03},{0.2, 0.4, 0.05},{0.3, 0.5, 0.1},{0.4, 0.6, 0.2},{0.5, 0.7, 0.3},{0.6, 0.8, 0.4}};

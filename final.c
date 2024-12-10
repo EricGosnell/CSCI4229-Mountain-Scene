@@ -42,7 +42,7 @@ int emission    = 100;  // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
-float season = 0;
+int season = 0;
 
 static void summer(){
     PineTree(2113,3140,-2453,.5*dim,.5*dim,.5*dim);
@@ -79,8 +79,8 @@ void display() {
     gluLookAt(E[0],E[1],E[2], C[0],C[1],C[2], 0,1,0);
 
     /* Set lighting values and create light source */
-    // glShadeModel(GL_SMOOTH);
-    glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
+    // glShadeModel(GL_FLAT);
     //  Translate intensity to color vectors
     float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
     float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
@@ -114,7 +114,7 @@ void display() {
 
     /* Draw Digital Elevation Models */
     // glDisable(GL_LIGHTING);
-    DrawDEM(0,0,0,3);
+    DrawDEM(4);
     // glEnable(GL_LIGHTING);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
@@ -328,7 +328,7 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
     l_th = fmod(t*30,360);
-    int seasonTime = fmod(t,60);
+    double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
         season = 1;
     }
