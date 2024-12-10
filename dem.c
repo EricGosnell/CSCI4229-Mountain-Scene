@@ -1,8 +1,8 @@
 #include "CSCIx229.h"
 
 /* Global Variables */
-vtx vertices[4194304]; // Vertex list
-unsigned int indices[25165824]; // 3 indices per triangle
+vtx vertices[1048576]; // Vertex list
+unsigned int indices[6291456]; // 3 indices per triangle
 int dem_season = 0;
 
 
@@ -262,7 +262,7 @@ void DrawDEM(const double scale) {
     glPushMatrix();
     // Translate and scale
     // TODO: may need to be reversed now that the DEM is centered at the origin
-    glScaled(scale,scale*1.2,scale);
+    glScaled(scale,scale*1.25,scale);
 
     // Set Color Properties
     const float black[] = {0, 0, 0, 1};

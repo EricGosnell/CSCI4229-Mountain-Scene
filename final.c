@@ -44,22 +44,39 @@ int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
 int season = 0;
 
-static void summer(){
-    PineTree(2113,3140,-2453,.5*dim,.5*dim,.5*dim);
-    PineTree(2332,3140,-2385,.5*dim,.5*dim,.5*dim);
-    PineTree(1846,3110,-2382,.5*dim,.5*dim,.5*dim);
-    PineTree(1853,3080,-2262,.5*dim,.5*dim,.5*dim);
-    PineTree(1767,3110,-2168,.5*dim,.5*dim,.5*dim);
-    PineTree(2545,3110,-2156,.5*dim,.5*dim,.5*dim);
-    aspenTree(2607,3140,-1655,.2*dim,.2*dim,.2*dim);
-    aspenTree(2701,3110,-1774,.2*dim,.2*dim,.2*dim);
-    aspenTree(2786,3110,-1784,.2*dim,.2*dim,.2*dim);
-    deer(2373,3150,-2154,.03*dim,.03*dim,.03*dim,0);
-    deer(2273,3150,-2154,.03*dim,.03*dim,.03*dim,15);
-    rabbit(2485,3140,-1664,.02*dim,.02*dim,.02*dim,180);
-    owl(2570,3320,-2160,.02*dim, .02*dim,.02*dim,0);
-}
 
+static void forest(){
+    //flat area
+
+    PineTree(-187,-30,688,200,300,200);
+    PineTree(-160,-30,1000,200,300,200);
+    PineTree(-40,-30,1500,200,300,200);
+    PineTree(20,-30,1700,200,300,200);
+    PineTree(1,-30,1100,200,300,200);
+    PineTree(1,-30,1100,200,300,200);
+    PineTree(-163,-30, 1090,200,300,200);
+    PineTree(-100,-30, 1255,200,300,200);
+    PineTree(-40,-30, 990,200,300,200);
+    PineTree(-150,-40, 1150,200,300,200);
+    PineTree(-100,-40, 1800,200,300,200);
+    PineTree(50, -40, 1000,200,300,200);
+    PineTree(-216,-30, 1325,200,300,200);
+    PineTree(70,-40, 1500,200,300,200);
+    PineTree(-120,-40, 1600,200,300,200);
+    PineTree(-91,-40,584,200,300,200);
+    PineTree(-118,-40,745,200,300,200);
+
+    //area next to lake
+    PineTree(263,0,500,200,300,200);
+    PineTree(200,0,300,200,300,200);
+    PineTree(150,0,250,200,300,200);
+    PineTree(180,0,430,200,300,200);
+
+    aspenTree(-244,0,-250,100,150,100);
+    aspenTree(-321,0,-78.1,100,150,100);
+
+    
+}
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
  */
@@ -114,15 +131,14 @@ void display() {
 
     /* Draw Digital Elevation Models */
     // glDisable(GL_LIGHTING);
-    DrawDEM(4);
+    DrawDEM(1);
     // glEnable(GL_LIGHTING);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-
-    PineTree(50,0,50,200,200,200);
+    forest();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -373,8 +389,11 @@ int main(int argc,char* argv[]) {
     glutSpecialFunc(special);
     glutKeyboardFunc(key);
     glutIdleFunc(idle);
+
+
     // Load DEM
     ReadDEM("cirque1.dem","cirque2.dem");
+    //generate tree coordinates
 
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");

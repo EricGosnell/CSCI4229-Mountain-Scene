@@ -262,7 +262,7 @@ void aspenTree(double x, double y, double z, double dx, double dy, double dz){
     glTranslated(x,y,z);
     glScaled(dx,dy,dz);
 
-    cylinder(0,-.2,0,.015,1.5,.015,0,0,0,15,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
+    cylinder(0,-.2,0,.015,1.5,.015,0,0,0,30,aspentrunk[0],aspentrunk[1],aspentrunk[2]);
     for(int th = 0; th < 360; th+=90){
         glPushMatrix();
         glRotated(th,0,1,0);
