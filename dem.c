@@ -262,7 +262,7 @@ void DrawDEM(const double scale) {
     glPushMatrix();
     // Translate and scale
     // TODO: may need to be reversed now that the DEM is centered at the origin
-    glScaled(scale,scale*1.2,scale);
+    glScaled(scale,scale*1.25,scale);
 
     // Set Color Properties
     const float black[] = {0, 0, 0, 1};
