@@ -22,6 +22,7 @@ static void getColor(const int index) {
     GLfloat dirt[3];
     GLfloat snow[3];
     GLfloat lake[3];
+    int snow_offset = 0; // Elevation offset of snowline
 
     // Set colors based on season
     /*
@@ -39,6 +40,7 @@ static void getColor(const int index) {
             dirt[0] = 0.5f; dirt[1] = 0.4f; dirt[2] = 0.3f;
             snow[0] = 0.9f; snow[1] = 0.9f; snow[2] = 0.9f;
             lake[0] = 0.1f; lake[1] = 0.6f; lake[2] = 0.7f;
+            snow_offset = -100;
             break;
         // Summer
         case 2:
@@ -47,6 +49,7 @@ static void getColor(const int index) {
             dirt[0] = 0.6f; dirt[1] = 0.5f; dirt[2] = 0.4f;
             snow[0] = 0.8f; snow[1] = 0.8f; snow[2] = 0.8f;
             lake[0] = 0; lake[1] = 0.4f; lake[2] = 0.6f;
+            snow_offset = 0;
             break;
         // Autumn
         case 3:
@@ -55,14 +58,16 @@ static void getColor(const int index) {
             dirt[0] = 0.7f; dirt[1] = 0.5f; dirt[2] = 0.35f;
             snow[0] = 0.9f; snow[1] = 0.85f; snow[2] = 0.8f;
             lake[0] = 0.05f; lake[1] = 0.35f; lake[2] = 0.55f;
+            snow_offset = 200;
             break;
         // Winter
         case 4:
-            forest[0] = 0.1f; forest[1] = 0.3f; forest[2] = 0.1f;
+            forest[0] = 0.4f; forest[1] = 0.5f; forest[2] = 0.4f;
             tundra[0] = 0.9f; tundra[1] = 0.9f; tundra[2] = 0.9f;
             dirt[0] = 0.85f; dirt[1] = 0.85f; dirt[2] = 0.85f;
             snow[0] = 0.85f; snow[1] = 0.85f; snow[2] = 0.85f;
             lake[0] = 0.7f; lake[1] = 0.9f; lake[2] = 1;
+            snow_offset = -100;
             break;
         default:
             forest[0] = 0; forest[1] = 0; forest[2] = 0;
@@ -70,6 +75,7 @@ static void getColor(const int index) {
             dirt[0] = 0; dirt[1] = 0; dirt[2] = 0;
             snow[0] = 0; snow[1] = 0; snow[2] = 0;
             lake[0] = 0; lake[1] = 0; lake[2] = 0;
+            snow_offset = 0;
             break;
     }
 
@@ -107,7 +113,7 @@ static void getColor(const int index) {
 
     // Darken steeper slopes
     if (vertices[indices[index]].slope_angle > 30) {
-        const float darkeningFactor = 1.0f - ((vertices[indices[index]].slope_angle - 30) / 60.0f);
+        const float darkeningFactor = 1.0f - ((vertices[indices[index]].slope_angle - 30) / (season==4?60.0f:90.0f));
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] *= darkeningFactor;
@@ -117,15 +123,20 @@ static void getColor(const int index) {
 
     // Snow
     if (vertices[indices[index]].slope_angle < 55 &&
-        (vertices[indices[index]].slope_aspect > 270 || vertices[indices[index]].slope_aspect < 90
-        || vertices[indices[index]].avg_elevation > 3600)) {
+        (vertices[indices[index]].slope_aspect > 270 || vertices[indices[index]].slope_aspect < 90 // North facing
+        || vertices[indices[index]].avg_elevation > 3700+snow_offset)) {
 
-        if (vertices[indices[index]].avg_elevation > 3350) {
+        if (vertices[indices[index]].avg_elevation > 3350+snow_offset) { // If north facing and above 3350 or south facing above 3700
             // Smooth transition between dirt/stone and snow (3700 to 3800)
-            t = (vertices[indices[index]].avg_elevation - 3350.0f) / 100.0f;
+            // t = (vertices[indices[index]].avg_elevation - 3350.0f) / 100.0f;
+            // for (int i = index; i < index+3; i++) {
+            //     for (int j = 0; j < 3; j++) {
+            //         vertices[indices[i]].rgb[j] = (1-t)*dirt[j] + t*snow[j];
+            //     }
+            // }
             for (int i = index; i < index+3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    vertices[indices[i]].rgb[j] = (1-t)*dirt[j] + t*snow[j];
+                    vertices[indices[i]].rgb[j] = snow[j];
                 }
             }
         }

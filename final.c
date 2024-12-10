@@ -138,7 +138,7 @@ void display() {
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-    forest();
+    // forest();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
