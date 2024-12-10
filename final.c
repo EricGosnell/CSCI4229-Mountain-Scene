@@ -44,6 +44,59 @@ int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
 int season = 0;
 
+int    sky[2];   //  Sky textures
+
+static void Sky(double D)
+{
+   //  Textured white box dimension (-D,+D)
+   glPushMatrix();
+   glScaled(D,D,D);
+   glEnable(GL_TEXTURE_2D);
+   glColor3f(1,1,1);
+
+   //  Sides
+   glBindTexture(GL_TEXTURE_2D,sky[0]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.00,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(1.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(1.00,1); glVertex3f(-1,+1,-1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glEnd();
+
+   //  Top and bottom
+   glBindTexture(GL_TEXTURE_2D,sky[1]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.0,0); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.0,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(1.0,1); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(1.0,0); glVertex3f(-1,-1,-1);
+   glEnd();
+
+   //  Undo
+   glDisable(GL_TEXTURE_2D);
+   glPopMatrix();
+}
+
 
 static void forest(){
     //flat area
@@ -89,7 +142,7 @@ void display() {
     glEnable(GL_DEPTH_TEST);
     //  Undo previous transformations
     glLoadIdentity();
-
+    Sky(3.5*dim);
     // Set view angle
     C[0] = E[0] + dim*cos(th*3.1415926/180); // Fx = Cx - Ex = cos(th)
     C[2] = E[2] + dim*sin(th*3.1415926/180); // Fz = Cz - Ez = sin(th)
@@ -394,7 +447,8 @@ int main(int argc,char* argv[]) {
     // Load DEM
     ReadDEM("cirque1.dem","cirque2.dem");
     //generate tree coordinates
-
+    sky[0] = LoadTexBMP("skytest.bmp");
+    sky[1] = LoadTexBMP("sky1.bmp");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
