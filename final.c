@@ -42,6 +42,22 @@ int emission    = 100;  // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
+int season = 0;
+
+static void summer(){
+    PineTree(2113,3140,-2453,.5*dim,.5*dim,.5*dim);
+    PineTree(2332,3140,-2385,.5*dim,.5*dim,.5*dim);
+    PineTree(1846,3110,-2382,.5*dim,.5*dim,.5*dim);
+    PineTree(1853,3080,-2262,.5*dim,.5*dim,.5*dim);
+    PineTree(1767,3110,-2168,.5*dim,.5*dim,.5*dim);
+    PineTree(2545,3110,-2156,.5*dim,.5*dim,.5*dim);
+    aspenTree(2607,3140,-1655,.2*dim,.2*dim,.2*dim);
+    aspenTree(2701,3110,-1774,.2*dim,.2*dim,.2*dim);
+    aspenTree(2786,3110,-1784,.2*dim,.2*dim,.2*dim);
+    deer(2373,3150,-2154,.03*dim,.03*dim,.03*dim,0);
+    deer(2273,3150,-2154,.03*dim,.03*dim,.03*dim,15);
+    rabbit(2485,3140,-1664,.02*dim,.02*dim,.02*dim,180);
+    owl(2570,3320,-2160,.02*dim, .02*dim,.02*dim,0);
 float season = 0;
 #define MAX_HIT_SPOTS 81
 
@@ -348,7 +364,7 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t*200, 360);
     l_th = fmod(t*30,360);
-    int seasonTime = fmod(t,60);
+    double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
         season = 1;
     }
