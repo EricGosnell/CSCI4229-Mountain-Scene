@@ -306,6 +306,7 @@ void PineTree(double x, double y, double z, double dx, double dy, double dz){
                 glVertex3d(0,0,-1);
                 glVertex3d(0,1,0);
                 glEnd();
+                polygon_count++;
                 glPopMatrix();
             glPopMatrix();
         }
