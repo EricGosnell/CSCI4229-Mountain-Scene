@@ -44,38 +44,67 @@ int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
 int season = 0;
 
+static int frustumCulling(double x, double y, double z) {
+    double F[3]; // Forward Vector F = C - E
+    for (int i=0; i<3; i++) {
+        F[i] = (C[i]-E[i]);
+    }
+    // Normalize the forward vector
+    const float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
+    for (int i=0; i<3; i++) {
+        F[i] /= f_len;
+    }
+    // If it is close to the camera, include it regardless
+    double distance = sqrt((E[0]-x)*(E[0]-x)+(E[2]-z)*(E[2]-z));
+    if (distance < 200) return 1;
+    // Do not include point if it is outside the view window
+    if (F[0]*(x - E[0]) + F[1]*(y - E[1]) + F[2]*(z - E[2]) < 180) return 0;
+    return 1;
+}
 
 static void forest(){
-    //flat area
+    float pineCoords[20][3] = {
+        // Flat Area
+        {-187,-30,688},
+        {-160,-30,1000},
+        {-40,-30,1500},
+        {20,-30,1700},
+        {1,-30,1100},
+        {-163,-30, 1090},
+        {-100,-30, 1255},
+        {-40,-30, 990},
+        {-150,-40, 1150},
+        {-100,-40, 1800},
+        {50, -40, 1000},
+        {-216,-30, 1325},
+        {70,-40, 1500},
+        {-120,-40, 1600},
+        {-91,-40,584},
+        {-118,-40,745},
 
-    PineTree(-187,-30,688,200,300,200);
-    PineTree(-160,-30,1000,200,300,200);
-    PineTree(-40,-30,1500,200,300,200);
-    PineTree(20,-30,1700,200,300,200);
-    PineTree(1,-30,1100,200,300,200);
-    PineTree(1,-30,1100,200,300,200);
-    PineTree(-163,-30, 1090,200,300,200);
-    PineTree(-100,-30, 1255,200,300,200);
-    PineTree(-40,-30, 990,200,300,200);
-    PineTree(-150,-40, 1150,200,300,200);
-    PineTree(-100,-40, 1800,200,300,200);
-    PineTree(50, -40, 1000,200,300,200);
-    PineTree(-216,-30, 1325,200,300,200);
-    PineTree(70,-40, 1500,200,300,200);
-    PineTree(-120,-40, 1600,200,300,200);
-    PineTree(-91,-40,584,200,300,200);
-    PineTree(-118,-40,745,200,300,200);
+        // Area next to lake
+        {263,0,500},
+        {200,0,300},
+        {150,0,250},
+        {180,0,430},
+    };
 
-    //area next to lake
-    PineTree(263,0,500,200,300,200);
-    PineTree(200,0,300,200,300,200);
-    PineTree(150,0,250,200,300,200);
-    PineTree(180,0,430,200,300,200);
+    float aspenCoords[2][3] = {
+        {-244,0,-250},
+        {-321,0,-78.1f},
+    };
 
-    aspenTree(-244,0,-250,100,150,100);
-    aspenTree(-321,0,-78.1,100,150,100);
+    for (int i=0; i<sizeof(pineCoords)/sizeof(pineCoords[0]); i++) {
+        if (frustumCulling(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2])) {
+            PineTree(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2],200,300,200);
+        }
+    }
 
-    
+    for (int i=0; i<sizeof(aspenCoords)/sizeof(aspenCoords[0]); i++) {
+        if (frustumCulling(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2])) {
+            aspenTree(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2],100,150,100);
+        }
+    }
 }
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
