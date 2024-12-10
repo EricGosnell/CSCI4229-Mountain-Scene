@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 // GLEW _MUST_ be included first
 #ifdef USEGLEW
@@ -77,7 +78,7 @@ void blackBear(double x, double y, double z, double dx, double dy, double dz, do
 void standingBlackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 
 #define DEM_W 4096 // Width of the DEM
-#define DEM_R 2 // Factor by which to reduce resolution
+#define DEM_R 4 // Factor by which to reduce resolution
 
 typedef struct {
     GLfloat x, y, z;
@@ -85,8 +86,8 @@ typedef struct {
     GLfloat normal[3];
 } vtx; // Triangle used in drawing the terrain
 
-extern vtx vertices[4194304];
-extern unsigned int indices[25165824];
+extern vtx vertices[1048576];
+extern unsigned int indices[6291456];
 extern int polygon_count;
 extern double E[3];
 extern double C[3];

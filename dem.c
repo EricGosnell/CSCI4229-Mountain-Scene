@@ -1,8 +1,8 @@
 #include "CSCIx229.h"
 
 /* Global Variables */
-vtx vertices[4194304]; // Vertex list
-unsigned int indices[25165824]; // 3 indices per triangle
+vtx vertices[1048576]; // Vertex list
+unsigned int indices[6291456]; // 3 indices per triangle
 
 
 /*

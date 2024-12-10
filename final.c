@@ -43,21 +43,42 @@ float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
 float season = 0;
+#define MAX_HIT_SPOTS 81
 
-static void summer(){
-    PineTree(2113,3140,-2453,.5*dim,.5*dim,.5*dim);
-    PineTree(2332,3140,-2385,.5*dim,.5*dim,.5*dim);
-    PineTree(1846,3110,-2382,.5*dim,.5*dim,.5*dim);
-    PineTree(1853,3080,-2262,.5*dim,.5*dim,.5*dim);
-    PineTree(1767,3110,-2168,.5*dim,.5*dim,.5*dim);
-    PineTree(2545,3110,-2156,.5*dim,.5*dim,.5*dim);
-    aspenTree(2607,3140,-1655,.2*dim,.2*dim,.2*dim);
-    aspenTree(2701,3110,-1774,.2*dim,.2*dim,.2*dim);
-    aspenTree(2786,3110,-1784,.2*dim,.2*dim,.2*dim);
-    deer(2373,3150,-2154,.03*dim,.03*dim,.03*dim,0);
-    deer(2273,3150,-2154,.03*dim,.03*dim,.03*dim,15);
-    rabbit(2485,3140,-1664,.02*dim,.02*dim,.02*dim,180);
-    owl(2570,3320,-2160,.02*dim, .02*dim,.02*dim,0);
+
+float treeCoords[MAX_HIT_SPOTS*MAX_HIT_SPOTS][3];
+
+void calcTreeHits(){
+    int index = 0;
+    for( i = 0; i <MAX_HIT_SPOTS; i++){
+        for(j = 0; j < MAX_HIT_SPOTS; j++){
+            int xCoord = DEM_W / MAX_HIT_SPOTS * i;
+            int zCoord = DEM_W / MAX_HIT_SPOTS * j;
+            int yCoord = vertices[indices[x*(DEM_W/DEM_R)+ zCoord]].y;
+            if(vertices[indices[x*(DEM_W/DEM_R)+ zCoord]].slope_angle < 15 && vertices[indices[x*(DEM_W/DEM_R)+ zCoord]].slope_angle >0 && vertices[indices[x*(DEM_W/DEM_R)+ zCoord]].elevation < 3200){
+                int random = rand();
+                if(random < .1*RAND_MAX){
+                    treeCoords[index][0] = xCoord - DEM_W/2;;
+                    treeCoords[index][1] = yCoord;
+                    treeCoords[index][2] = zCoord - DEM_W/2;
+                    index++;
+                }
+            }
+        }
+    }
+
+}
+
+
+static void forest(){
+    glPushMatrix();
+    glScaled(4,4,4);
+    int i = 0;
+    while(treeCoords[i][0]){
+        PineTree(treeCoords[i][0],treeCoords[i][1], treeCoords[i][2], 700, 900, 700);
+        i++;
+    }
+    glPopMatrix();
 }
 
 /*
@@ -79,8 +100,8 @@ void display() {
     gluLookAt(E[0],E[1],E[2], C[0],C[1],C[2], 0,1,0);
 
     /* Set lighting values and create light source */
-    // glShadeModel(GL_SMOOTH);
-    glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
+    // glShadeModel(GL_FLAT);
     //  Translate intensity to color vectors
     float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
     float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
@@ -114,15 +135,14 @@ void display() {
 
     /* Draw Digital Elevation Models */
     // glDisable(GL_LIGHTING);
-    DrawDEM(0,0,0,3);
+    DrawDEM(0,0,0,4);
     // glEnable(GL_LIGHTING);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-
-    PineTree(50,0,50,200,200,200);
+    forest();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -373,6 +393,9 @@ int main(int argc,char* argv[]) {
     glutSpecialFunc(special);
     glutKeyboardFunc(key);
     glutIdleFunc(idle);
+
+    //generate tree coordinates
+    treeCoordinates();
     // Load DEM
     ReadDEM("cirque1.dem","cirque2.dem");
 
