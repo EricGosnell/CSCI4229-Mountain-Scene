@@ -63,7 +63,7 @@ void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
 void ReadDEM(const char *file1, const char *file2);
-void DrawDEM(double dx, double dy, double dz, double scale);
+void DrawDEM(double scale);
 void sphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
 void halfSphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
 void cylinder(double x,double y,double z,double dx, double dy, double dz, double thx, double thy, double thz, int inc, float r, float g, float b);
@@ -81,6 +81,9 @@ typedef struct {
     GLfloat x, y, z;
     GLfloat rgb[3];
     GLfloat normal[3];
+    float slope_angle;
+    float slope_aspect;
+    float avg_elevation;
 } vtx; // Triangle used in drawing the terrain
 
 extern vtx vertices[4194304];
@@ -89,6 +92,7 @@ extern int polygon_count;
 extern double E[3];
 extern double C[3];
 extern GLuint vbo, ebo;
+extern int season;
 
 
 #ifdef __cplusplus
