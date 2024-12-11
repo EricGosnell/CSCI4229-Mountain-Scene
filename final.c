@@ -245,6 +245,7 @@ void display() {
 
     /* Draw Digital Elevation Models */
     DrawDEM(1);
+
     /* Draw forest*/
     forest();
     releaseTheAnimals();
