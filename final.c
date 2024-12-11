@@ -46,11 +46,12 @@ int season = 0;
 
 int    sky[2];   //  Sky textures
 
-static void Sky(double D)
+static void Sky(double D, double th)
 {
    //  Textured white box dimension (-D,+D)
    glPushMatrix();
    glScaled(D,D,D);
+   glRotated(th,0,1,0);
    glEnable(GL_TEXTURE_2D);
    glColor3f(1,1,1);
 
@@ -142,7 +143,6 @@ void display() {
     glEnable(GL_DEPTH_TEST);
     //  Undo previous transformations
     glLoadIdentity();
-    Sky(3.5*dim);
     // Set view angle
     C[0] = E[0] + dim*cos(th*3.1415926/180); // Fx = Cx - Ex = cos(th)
     C[2] = E[2] + dim*sin(th*3.1415926/180); // Fz = Cz - Ez = sin(th)
@@ -181,6 +181,11 @@ void display() {
     glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
+
+    /* Draw skybox */
+    glDisable(GL_LIGHTING);
+    Sky(5*dim,dt);
+    glEnable(GL_LIGHTING);
 
     /* Draw Digital Elevation Models */
     // glDisable(GL_LIGHTING);
@@ -395,7 +400,7 @@ void reshape(int width,int height) {
 
 static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-    dt = fmod(t*200, 360);
+    dt = fmod(t, 360);
     l_th = fmod(t*30,360);
     double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
