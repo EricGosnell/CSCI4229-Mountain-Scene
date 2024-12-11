@@ -135,3 +135,36 @@ void triangle(double x, double y, double z, double dx, double dy, double dz, dou
    glPopMatrix();
    polygon_count++;
 }
+/*
+ * Draw a cone
+ *    at (x,y,z)
+ *    scaled (dx, dy, dz)
+ *    rotated (thX, thY, thZ)
+ */
+void cone(double x, double y, double z, double dx, double dy, double dz, double thX, double thY, double thZ) {
+    // Save transformation
+    glPushMatrix();
+    // Offset
+    glTranslated(x,y,z);
+    glRotated(thX,1,0,0);
+    glRotated(thY,0,1,0);
+    glRotated(thZ,0,0,1);
+    glScaled(dx,0.3*dy,0.3*dz);
+
+    // Draw cone
+    glBegin(GL_TRIANGLES);
+    // Resolution Constant
+    const int d = 20;
+    for (int th=0;th<360;th+=d) {
+        glNormal3f(1,Cos(th),Sin(th));
+        glVertex3f(0,Cos(th),Sin(th));
+        glNormal3f(1,Cos(th+(d/2)),Sin(th+(d/2)));
+        glVertex3f(1,0,0);
+        glNormal3f(1,Cos(th+d),Sin(th+d));
+        glVertex3f(0,Cos(th+d),Sin(th+d));
+        polygon_count++;
+    }
+    glEnd();
+    // Undo transformations
+    glPopMatrix();
+}
