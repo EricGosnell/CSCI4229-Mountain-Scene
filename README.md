@@ -32,4 +32,4 @@ The trees are currently placed in the scene in a simple manner which shows them 
 
 We will also implement a skybox surrounding the scene so that it is not always night, and if there is time then this will include features for day and night cycles.
 
-Finally, Ragan plans on creating a bear using bezier curves, along with improving the deer using the same method.
+
