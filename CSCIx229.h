@@ -63,7 +63,7 @@ unsigned int LoadTexBMP(const char* file);
 void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
-void ReadDEM(const char *file1, const char *file2);
+void ReadDEM(const char *fileName);
 void DrawDEM(double scale);
 void sphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
 void halfSphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b);
@@ -77,8 +77,8 @@ void PineTree(double x, double y, double z, double dx, double dy, double dz);
 void blackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 void standingBlackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 
-#define DEM_W 4096 // Width of the DEM
-#define DEM_R 4 // Factor by which to reduce resolution
+#define DEM_W 1024 // Width of the DEM
+#define DEM_R 1 // Factor by which to reduce resolution
 
 typedef struct {
     GLfloat x, y, z;
