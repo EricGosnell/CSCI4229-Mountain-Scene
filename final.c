@@ -381,11 +381,9 @@ int main(int argc,char* argv[]) {
 
 
     // Load DEM
-    ReadDEM("cirque1.dem","cirque2.dem");
-
-    //load sky box textures
-    sky[0] = LoadTexBMP("sky1.bmp");
-    sky[1] = LoadTexBMP("sky2.bmp");
+    ReadDEM("cirque.dem");
+    sky[0] = LoadTexBMP("skytest.bmp");
+    sky[1] = LoadTexBMP("skytest2.bmp");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
