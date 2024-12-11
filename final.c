@@ -218,8 +218,10 @@ void display() {
 
     /* Draw Digital Elevation Models */
     DrawDEM(1);
+
     /* Draw forest*/
     forest();
+
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
