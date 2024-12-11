@@ -212,20 +212,22 @@ void display() {
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
     /* Draw skybox */
-    glDisable(GL_LIGHTING);
-    Sky(5*dim,dt);
-    glEnable(GL_LIGHTING);
+    //glDisable(GL_LIGHTING);
+    //Sky(5*dim,dt);
+    //glEnable(GL_LIGHTING);
 
     /* Draw Digital Elevation Models */
     // glDisable(GL_LIGHTING);
-    DrawDEM(1);
+    //DrawDEM(1);
     // glEnable(GL_LIGHTING);
     // glColor3f(1,1,1);
     // glWindowPos2i(5,100);
     // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
     // glWindowPos2i(5,80);
     // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-    forest();
+    //forest();
+    aspenTree(0,0,0,400,400,400);
+    PineTree(500,0,0,800,800,800);
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -479,10 +481,10 @@ int main(int argc,char* argv[]) {
 
 
     // Load DEM
-    ReadDEM("cirque1.dem","cirque2.dem");
+    //ReadDEM("cirque1.dem","cirque2.dem");
     //generate tree coordinates
-    sky[0] = LoadTexBMP("skytest.bmp");
-    sky[1] = LoadTexBMP("sky1.bmp");
+    //sky[0] = LoadTexBMP("skytest.bmp");
+    //sky[1] = LoadTexBMP("sky1.bmp");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();
