@@ -39,7 +39,7 @@ static void getColor(const int index) {
             tundra[0] = 0.40f; tundra[1] = 0.55f; tundra[2] = 0.35f;
             dirt[0] = 0.45f; dirt[1] = 0.42f; dirt[2] = 0.32f;
             snow[0] = 0.9f; snow[1] = 0.9f; snow[2] = 0.9f;
-            lake[0] = 0.1f; lake[1] = 0.6f; lake[2] = 0.7f;
+            lake[0] = 0; lake[1] = 0.4f; lake[2] = 0.6f;
             snow_offset = -50;
             break;
         // Summer

@@ -5,8 +5,7 @@
 * Key Bindings:
 *     ESC             Quit Program
 *     Arrows          Change View Angle
-*     0               Reset View Angle
-*     PgUp/PgDown     Zoom In/Out
+*     1-6             Cycle through spotlight locations
 *
 *     First Person Movement:
 *     w/s             Move Forward/Backward
@@ -18,7 +17,6 @@
 
 /* Global Variables */
 double dt = 0; // Time step
-int axes = 0; // Toggle axes
 int polygon_count = 0; // Total number of polygons
 int frame_count = 0; // Frame count
 int t0 = 0; // Initial time for measuring FPS
@@ -26,12 +24,12 @@ float fps = -1; // Starting value for FPS
 GLuint vbo, ebo; // Vertex Buffer Object and Element Buffer Object
 
 /* First Person Camera Settings */
-int th = -135; // Azimuth of view angle
+int th = -78; // Azimuth of view angle
 int fov = 60; // Field of view
 double asp = 1; // Aspect ratio of screen
 double dim = 1000; // Size of world
 double E[3]; // Eye position for first person (Position you're at)
-double C[3] = {0,-100,0}; // Camera position for first person (Position you're looking at)
+double C[3] = {0,85,0}; // Camera position for first person (Position you're looking at)
 
 /* Lighting Values */
 int distance;    		// Light distance
@@ -42,7 +40,7 @@ int emission    = 100;  // Emission intensity (%)
 float shiny     = 1;    // Shininess (value)
 int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
-int season = 0;
+int season = 0;         // 1: Spring, 2: Summer, 3: Autumn, 4: Winter
 int sky[2];             // Sky textures
 
 
@@ -124,34 +122,11 @@ void display() {
     /* Draw Digital Elevation Models */
     DrawDEM(1);
 
-    /* Draw forest*/
+    /* Draw forest */
     forest();
-    //Draw animals
+
+    /* Draw animals */
     releaseTheAnimals();
-    /* Draw axes */
-    glDisable(GL_LIGHTING);
-
-    //  Draw axes
-    glColor3f(1,1,1);
-    if (axes) {
-        const double len=dim/2;
-        glBegin(GL_LINES);
-        glVertex3d(0,0,0);
-        glVertex3d(len,0,0);
-        glVertex3d(0,0,0);
-        glVertex3d(0,len,0);
-        glVertex3d(0,0,0);
-        glVertex3d(0,0,len);
-        glEnd();
-
-        //  Label axes
-        glRasterPos3d(len,0,0);
-        Print("X");
-        glRasterPos3d(0,len,0);
-        Print("Y");
-        glRasterPos3d(0,0,len);
-        Print("Z");
-    }
 
     // Calculate FPS
     frame_count++;
@@ -163,13 +138,10 @@ void display() {
         frame_count = 0;
     }
 
-    // Display parameters
-    glWindowPos2i(5,45);
-    Print("Polygon Count: %d, FPS: %2.2f",polygon_count,fps);
-    glWindowPos2i(5,25);
-    Print("Ambient: %d%%, Diffuse: %d%%, Specular: %d%%",ambient, diffuse, specular);
+    // Display polygon count and framerate
+    glColor3f(1,1,1);
     glWindowPos2i(5,5);
-    Print("X: %.1f, Y: %.1f, Z: %.1f, Dim: %.0f",E[0],E[1],E[2],dim);
+    Print("Polygon Count: %d, FPS: %2.2f",polygon_count,fps);
 
     //  Render the scene and make it visible
     ErrCheck("display");
@@ -193,12 +165,6 @@ void special(int key,int x,int y) {
     //  Down arrow key - decrease elevation by 5% of dim
     else if (key == GLUT_KEY_DOWN)
         C[1] -= 0.05*dim;
-    //  PageUp key - increase dim
-    else if (key == GLUT_KEY_PAGE_DOWN)
-        dim += 1;
-    //  PageDown key - decrease dim
-    else if (key == GLUT_KEY_PAGE_UP && dim>1)
-        dim -= 1;
     //  Keep angles to +/-360 degrees
     th %= 360;
     //  Update projection
@@ -212,7 +178,7 @@ void special(int key,int x,int y) {
  *  GLUT calls this routine when a key is pressed
  */
 void key(unsigned char ch,int x,int y) {
-    const double df = 0.03; // First person movement factor
+    const double df = 0.005; // First person movement factor
     switch (ch) {
         // ESC - Quit Program
         case 27:
@@ -220,18 +186,43 @@ void key(unsigned char ch,int x,int y) {
             glDeleteBuffers(1,&vbo);
             glDeleteBuffers(1,&ebo);
             exit(0);
-        // Reset View Angle TODO: reimplement
-        // case '0':
-        //     th = -135;
-        //     // Eye position
-        //     E[0] = 1.5; E[1] = 1.5; E[2] = 1.5;
-        //     // Camera position for first person
-        //     C[0] = 0; C[1] = -1.5; C[2] = 0;
-        //     break;
-        // Toggle axes TODO: Remove in final product
-        case 'x':
-        case 'X':
-            axes = !axes;
+        /* Spotlight Locations */
+        // Starting View Angle
+        case '1':
+            th = -78;
+            E[0] = -218; E[1] = 35; E[2] = 550;
+            C[1] = 85;
+            break;
+        // Bear and Aspens
+        case '2':
+            th = -144;
+            E[0] = -88; E[1] = 20; E[2] = -4;
+            C[1] = 135;
+            break;
+        // Alpine lake with bear
+        // Fun Fact - Bears have been observed to climb up ridges for no reason other than to enjoy the view :)
+        case '3':
+            th = -69;
+            E[0] = -110; E[1] = 440; E[2] = -924;
+            C[1] = 385;
+            break;
+        // Deer herd with pretty peaks
+        case '4':
+            th = -12;
+            E[0] = 532; E[1] = 95; E[2] = -129;
+            C[1] = 230;
+            break;
+        // Back bowl
+        case '5':
+            th = -81;
+            E[0] = -981; E[1] = 570; E[2] = 169;
+            C[1] = 295;
+            break;
+        // Owl
+        case '6':
+            th = 45;
+            E[0] = 136; E[1] = 110; E[2] = 249;
+            C[1] = 235;
             break;
 
         /* First Person Movement */
@@ -275,42 +266,8 @@ void key(unsigned char ch,int x,int y) {
             E[1] -= df*dim;
             C[1] -= df*dim;
             break;
-
-        /* Lighting Controls */
-        // TODO: Remove in final product
-        // Increase ambient light
-        case '1':
-            if (ambient < 100) ambient += 5;
-            break;
-        // Decrease ambient light
-        case '!':
-            if (ambient > 0) ambient -= 5;
-            break;
-        // Increase diffuse light
-        case '2':
-            if (diffuse < 100) diffuse += 5;
-            break;
-        // Decrease diffuse light
-        case '@':
-            if (diffuse > 0) diffuse -= 5;
-            break;
-        // Increase specular light
-        case '3':
-            if (specular < 100) specular += 5;
-            break;
-        // Decrease specular light
-        case '#':
-            if (specular > 0) specular -= 5;
-            break;
-        // Increase light elevation
-        case ']':
-            l_ph += 0.01*dim;
-            break;
-        // Increase light elevation
-        case '[':
-            l_ph -= 0.01*dim;
-            break;
     }
+
     //  Reproject
     Project(fov,asp,dim);
     //  Tell GLUT it is necessary to redisplay the scene
@@ -357,9 +314,9 @@ static void idle(void) {
  */
 int main(int argc,char* argv[]) {
     // Set camera position
-    E[0] = 180;
-    E[1] = 530;
-    E[2] = 2710;
+    E[0] = -218;
+    E[1] = 35;
+    E[2] = 550;
     // Set light source position
     l_ph = 1.5*dim;
     distance = 1.5*dim;
