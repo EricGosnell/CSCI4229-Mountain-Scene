@@ -35,9 +35,10 @@ projection.o: projection.c CSCIx229.h
 dem.o: dem.c CSCIx229.h
 basic_shapes.o: basic_shapes.c CSCIx229.h
 nature_shapes.o: nature_shapes.c CSCIx229.h
+decorate_scene.o: decorate_scene.c CSCIx229.h
 
 #  Create archive
-CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o dem.o basic_shapes.o nature_shapes.o
+CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o dem.o basic_shapes.o nature_shapes.o decorate_scene.o
 	ar -rcs $@ $^
 
 # Compile rules

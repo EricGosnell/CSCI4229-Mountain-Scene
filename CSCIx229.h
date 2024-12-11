@@ -77,6 +77,10 @@ void PineTree(double x, double y, double z, double dx, double dy, double dz);
 void blackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 void standingBlackBear(double x, double y, double z, double dx, double dy, double dz, double th);
 void cone(double x, double y, double z, double dx, double dy, double dz, double thX, double thY, double thZ);
+void Sky(double D, double th);
+void forest();
+void releaseTheAnimals();
+int frustumCulling(double x, double y, double z);
 
 #define DEM_W 4096 // Width of the DEM
 #define DEM_R 4 // Factor by which to reduce resolution
@@ -97,6 +101,7 @@ extern double E[3];
 extern double C[3];
 extern GLuint vbo, ebo;
 extern int season;
+extern int sky[2];
 
 
 #ifdef __cplusplus
