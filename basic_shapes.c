@@ -14,7 +14,9 @@ static void Vertex(double th,double ph) {
    glVertex3d(x,y,z);
 }
 
-
+/*
+* Calculates cylinder vertex and normal
+*/
 static void CylinderVertex(double th,double inputy) {
    double x = Cos(th);
    double y = inputy;
@@ -55,6 +57,9 @@ void sphere(double x,double y,double z,double rx, double ry, double rz, double t
    //  Undo transformations
    glPopMatrix();
 }
+/*
+* Creates half sphere at (x,y,z) of radius r, variation of sphere (Credit: Vlakkies)
+*/
 void halfSphere(double x,double y,double z,double rx, double ry, double rz, double thx, double thy, double thz, float r, float g, float b) {
    const int inc = 15;
    //  Save transformation
@@ -83,7 +88,7 @@ void halfSphere(double x,double y,double z,double rx, double ry, double rz, doub
 /*
  *  Draw a cylinder
  *     at (x,y,z)
- *     radius (r)
+ *     radius (r) 
  */
 void cylinder(double x,double y,double z,double dx, double dy, double dz, double thx, double thy, double thz, int inc, float r, float g, float b) {
     //  Save transformation
@@ -118,7 +123,9 @@ void cylinder(double x,double y,double z,double dx, double dy, double dz, double
     //  Undo transformations
     glPopMatrix();
 }
-
+/*
+* Creates 2d triangle
+*/
 void triangle(double x, double y, double z, double dx, double dy, double dz, double thx, double thy, double thz) {
    glPushMatrix();
    glTranslated(x,y,z);
@@ -140,6 +147,7 @@ void triangle(double x, double y, double z, double dx, double dy, double dz, dou
  *    at (x,y,z)
  *    scaled (dx, dy, dz)
  *    rotated (thX, thY, thZ)
+ *    Credit: Vlakkies
  */
 void cone(double x, double y, double z, double dx, double dy, double dz, double thX, double thY, double thZ) {
     // Save transformation
