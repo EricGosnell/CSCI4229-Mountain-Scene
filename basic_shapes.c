@@ -147,6 +147,7 @@ void triangle(double x, double y, double z, double dx, double dy, double dz, dou
  *    at (x,y,z)
  *    scaled (dx, dy, dz)
  *    rotated (thX, thY, thZ)
+ *    Credit: Vlakkies
  */
 void cone(double x, double y, double z, double dx, double dy, double dz, double thX, double thY, double thZ) {
     // Save transformation
