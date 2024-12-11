@@ -117,24 +117,33 @@ static int frustumCulling(double x, double y, double z) {
 }
 
 static void forest(){
-    float pineCoords[20][3] = {
+    float pineCoords[27][3] = {
         // Flat Area
         {-187,-30,688},
         {-160,-30,1000},
-        {-40,-30,1500},
-        {20,-30,1700},
+        {-40,-30,900},
+        {20,-30,350},
         {1,-30,1100},
         {-163,-30, 1090},
-        {-100,-30, 1255},
         {-40,-30, 990},
         {-150,-40, 1150},
-        {-100,-40, 1800},
         {50, -40, 1000},
-        {-216,-30, 1325},
-        {70,-40, 1500},
-        {-120,-40, 1600},
+        {70,-40, 200},
+        {-120,-40, 850},
         {-91,-40,584},
         {-118,-40,745},
+        {60, -5, 638},
+        {4, -5, 735},
+        {-354, 20, 772},
+        {-375, 20, 954},
+        {-285, 20, 952},
+        {-402, 20, 900},
+        {-367, 20, 157},
+        {-379, 20, 313},
+        {-247, 10, 387},
+        {-417, 20, 460},
+
+
 
         // Area next to lake
         {263,0,500},
@@ -143,10 +152,17 @@ static void forest(){
         {180,0,430},
     };
 
-    float aspenCoords[2][3] = {
-        {-244,0,-250},
-        {-321,0,-78.1f},
+    float aspenCoords[8][3] = {
+        {-244,30,-250},
+        {-321,30,-78.1f},
+        {266,20,-154},
+        {157,20,-264},
+        {-4.5,30,-332},
+        {137,30,-156},
+        {183,50,602},
+        {283,60,788},
     };
+
 
     for (int i=0; i<sizeof(pineCoords)/sizeof(pineCoords[0]); i++) {
         if (frustumCulling(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2])) {
@@ -156,9 +172,20 @@ static void forest(){
 
     for (int i=0; i<sizeof(aspenCoords)/sizeof(aspenCoords[0]); i++) {
         if (frustumCulling(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2])) {
-            aspenTree(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2],100,150,100);
+            aspenTree(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2],100,100,100);
         }
     }
+}
+void releaseTheAnimals(){
+    blackBear(-315,50,613,20,20,20,50);
+    blackBear(-217,25,642,15,15,15,80);
+    blackBear(-6.9,380,-1496,15,15,15,270);
+    standingBlackBear(-361,60,-239,20,20,20,330);
+    deer(178,30,67,18,18,18,270);
+    deer(195,30,-22,18,18,18,300);
+    deer(890,140,-110,18,18,18,260);
+    deer(872,135,-233,18,18,18,300);
+    deer(1025,150,-201,18,18,18,290);
 }
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -220,6 +247,7 @@ void display() {
     DrawDEM(1);
     /* Draw forest*/
     forest();
+    releaseTheAnimals();
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
