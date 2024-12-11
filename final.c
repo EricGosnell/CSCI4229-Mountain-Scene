@@ -44,38 +44,121 @@ int l_th        = 90;   // Light azimuth
 float l_ph;    			// Elevation of light
 int season = 0;
 
+int    sky[2];   //  Sky textures
+
+static void Sky(double D, double th)
+{
+   //  Textured white box dimension (-D,+D)
+   glPushMatrix();
+   glScaled(D,D,D);
+   glRotated(th,0,1,0);
+   glEnable(GL_TEXTURE_2D);
+   glColor3f(1,1,1);
+
+   //  Sides
+   glBindTexture(GL_TEXTURE_2D,sky[0]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.00,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(0.25,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.25,1); glVertex3f(+1,+1,-1);
+
+   glTexCoord2f(0.50,0); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.50,1); glVertex3f(+1,+1,+1);
+
+   glTexCoord2f(0.75,0); glVertex3f(-1,-1,+1);
+   glTexCoord2f(1.00,0); glVertex3f(-1,-1,-1);
+   glTexCoord2f(1.00,1); glVertex3f(-1,+1,-1);
+   glTexCoord2f(0.75,1); glVertex3f(-1,+1,+1);
+   glEnd();
+
+   //  Top and bottom
+   glBindTexture(GL_TEXTURE_2D,sky[1]);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.0,0); glVertex3f(+1,+1,-1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,+1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(-1,+1,+1);
+   glTexCoord2f(0.0,1); glVertex3f(-1,+1,-1);
+
+   glTexCoord2f(1.0,1); glVertex3f(-1,-1,+1);
+   glTexCoord2f(0.5,1); glVertex3f(+1,-1,+1);
+   glTexCoord2f(0.5,0); glVertex3f(+1,-1,-1);
+   glTexCoord2f(1.0,0); glVertex3f(-1,-1,-1);
+   glEnd();
+
+   //  Undo
+   glDisable(GL_TEXTURE_2D);
+   glPopMatrix();
+}
+
+static int frustumCulling(double x, double y, double z) {
+    double F[3]; // Forward Vector F = C - E
+    for (int i=0; i<3; i++) {
+        F[i] = (C[i]-E[i]);
+    }
+    // Normalize the forward vector
+    const float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
+    for (int i=0; i<3; i++) {
+        F[i] /= f_len;
+    }
+    // If it is close to the camera, include it regardless
+    double distance = sqrt((E[0]-x)*(E[0]-x)+(E[2]-z)*(E[2]-z));
+    if (distance < 200) return 1;
+    // Do not include point if it is outside the view window
+    if (F[0]*(x - E[0]) + F[1]*(y - E[1]) + F[2]*(z - E[2]) < 180) return 0;
+    return 1;
+}
 
 static void forest(){
-    //flat area
+    float pineCoords[20][3] = {
+        // Flat Area
+        {-187,-30,688},
+        {-160,-30,1000},
+        {-40,-30,1500},
+        {20,-30,1700},
+        {1,-30,1100},
+        {-163,-30, 1090},
+        {-100,-30, 1255},
+        {-40,-30, 990},
+        {-150,-40, 1150},
+        {-100,-40, 1800},
+        {50, -40, 1000},
+        {-216,-30, 1325},
+        {70,-40, 1500},
+        {-120,-40, 1600},
+        {-91,-40,584},
+        {-118,-40,745},
 
-    PineTree(-187,-30,688,200,300,200);
-    PineTree(-160,-30,1000,200,300,200);
-    PineTree(-40,-30,1500,200,300,200);
-    PineTree(20,-30,1700,200,300,200);
-    PineTree(1,-30,1100,200,300,200);
-    PineTree(1,-30,1100,200,300,200);
-    PineTree(-163,-30, 1090,200,300,200);
-    PineTree(-100,-30, 1255,200,300,200);
-    PineTree(-40,-30, 990,200,300,200);
-    PineTree(-150,-40, 1150,200,300,200);
-    PineTree(-100,-40, 1800,200,300,200);
-    PineTree(50, -40, 1000,200,300,200);
-    PineTree(-216,-30, 1325,200,300,200);
-    PineTree(70,-40, 1500,200,300,200);
-    PineTree(-120,-40, 1600,200,300,200);
-    PineTree(-91,-40,584,200,300,200);
-    PineTree(-118,-40,745,200,300,200);
+        // Area next to lake
+        {263,0,500},
+        {200,0,300},
+        {150,0,250},
+        {180,0,430},
+    };
 
-    //area next to lake
-    PineTree(263,0,500,200,300,200);
-    PineTree(200,0,300,200,300,200);
-    PineTree(150,0,250,200,300,200);
-    PineTree(180,0,430,200,300,200);
+    float aspenCoords[2][3] = {
+        {-244,0,-250},
+        {-321,0,-78.1f},
+    };
 
-    aspenTree(-244,0,-250,100,150,100);
-    aspenTree(-321,0,-78.1,100,150,100);
+    for (int i=0; i<sizeof(pineCoords)/sizeof(pineCoords[0]); i++) {
+        if (frustumCulling(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2])) {
+            PineTree(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2],200,300,200);
+        }
+    }
 
-    
+    for (int i=0; i<sizeof(aspenCoords)/sizeof(aspenCoords[0]); i++) {
+        if (frustumCulling(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2])) {
+            aspenTree(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2],100,150,100);
+        }
+    }
 }
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -89,7 +172,6 @@ void display() {
     glEnable(GL_DEPTH_TEST);
     //  Undo previous transformations
     glLoadIdentity();
-
     // Set view angle
     C[0] = E[0] + dim*cos(th*3.1415926/180); // Fx = Cx - Ex = cos(th)
     C[2] = E[2] + dim*sin(th*3.1415926/180); // Fz = Cz - Ez = sin(th)
@@ -129,16 +211,17 @@ void display() {
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
+    /* Draw skybox */
+    glDisable(GL_LIGHTING);
+    Sky(5*dim,dt);
+    glEnable(GL_LIGHTING);
+
     /* Draw Digital Elevation Models */
-    // glDisable(GL_LIGHTING);
     DrawDEM(1);
-    // glEnable(GL_LIGHTING);
-    // glColor3f(1,1,1);
-    // glWindowPos2i(5,100);
-    // Print("Cx: %.2f, Cy: %.2f, Cz: %.2f",C[0],C[1],C[2]);
-    // glWindowPos2i(5,80);
-    // Print("Ex: %.2f, Ey: %.2f, Ez: %.2f",E[0],E[1],E[2]);
-    // forest();
+
+    /* Draw forest*/
+    forest();
+
     /* Draw axes */
     glDisable(GL_LIGHTING);
 
@@ -342,7 +425,7 @@ void reshape(int width,int height) {
 
 static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-    dt = fmod(t*200, 360);
+    dt = fmod(t, 360);
     l_th = fmod(t*30,360);
     double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
@@ -393,8 +476,8 @@ int main(int argc,char* argv[]) {
 
     // Load DEM
     ReadDEM("cirque1.dem","cirque2.dem");
-    //generate tree coordinates
-
+    sky[0] = LoadTexBMP("skytest.bmp");
+    sky[1] = LoadTexBMP("skytest2.bmp");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();

@@ -115,7 +115,7 @@ void cylinder(double x,double y,double z,double dx, double dy, double dz, double
         polygon_count++;
     }
     glEnd();
-    //  Undo transofrmations
+    //  Undo transformations
     glPopMatrix();
 }
 
@@ -133,4 +133,5 @@ void triangle(double x, double y, double z, double dx, double dy, double dz, dou
    glVertex3d(0,1,0);
    glEnd();
    glPopMatrix();
+   polygon_count++;
 }
