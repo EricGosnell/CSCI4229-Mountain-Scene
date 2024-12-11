@@ -22,51 +22,51 @@ static void getColor(const int index) {
     GLfloat dirt[3];
     GLfloat snow[3];
     GLfloat lake[3];
-    int snow_offset = 0; // Elevation offset of snowline
+    const GLfloat stone[3] = {0.45f, 0.42f, 0.4f};
+    int snow_offset = 0; // Elevation offset of snow-line
 
-    // Set colors based on season
     /*
      * Note: I used ChatGPT to help generate some of the RGB values listed below. I started with a baseline color, however
-     * since I find color quite difficult to work with, I used prompts such as "Make the autumn forest less orange." or
-     * "List the colors in between autumn and winter."
+     * since I find color quite difficult to work with, I used prompts such as "Make the autumn forest less orange."
      *
      * All processing of the RGB values is my own work.
      */
+    // Set colors based on season
     switch (season) {
         // Spring
         case 1:
-            forest[0] = 0.2f; forest[1] = 0.6f; forest[2] = 0.2f;
-            tundra[0] = 0.6f; tundra[1] = 0.7f; tundra[2] = 0.55f;
-            dirt[0] = 0.5f; dirt[1] = 0.4f; dirt[2] = 0.3f;
+            forest[0] = 0.18f; forest[1] = 0.42f; forest[2] = 0.18f;
+            tundra[0] = 0.40f; tundra[1] = 0.55f; tundra[2] = 0.35f;
+            dirt[0] = 0.45f; dirt[1] = 0.42f; dirt[2] = 0.32f;
             snow[0] = 0.9f; snow[1] = 0.9f; snow[2] = 0.9f;
             lake[0] = 0.1f; lake[1] = 0.6f; lake[2] = 0.7f;
-            snow_offset = -100;
+            snow_offset = -50;
             break;
         // Summer
         case 2:
-            forest[0] = 0.13f; forest[1] = 0.35f; forest[2] = 0.13f;
-            tundra[0] = 0.53f; tundra[1] = 0.55f; tundra[2] = 0.46f;
-            dirt[0] = 0.6f; dirt[1] = 0.5f; dirt[2] = 0.4f;
+            forest[0] = 0.25f; forest[1] = 0.50f; forest[2] = 0.20f;
+            tundra[0] = 0.47f; tundra[1] = 0.58f; tundra[2] = 0.38f;
+            dirt[0] = 0.52f; dirt[1] = 0.45f; dirt[2] = 0.35f;
             snow[0] = 0.8f; snow[1] = 0.8f; snow[2] = 0.8f;
             lake[0] = 0; lake[1] = 0.4f; lake[2] = 0.6f;
-            snow_offset = 0;
+            snow_offset = 50;
             break;
         // Autumn
         case 3:
-            forest[0] = 0.2f; forest[1] = 0.4f; forest[2] = 0.1f;
-            tundra[0] = 0.7f; tundra[1] = 0.6f; tundra[2] = 0.4f;
-            dirt[0] = 0.7f; dirt[1] = 0.5f; dirt[2] = 0.35f;
+            forest[0] = 0.30f; forest[1] = 0.35f; forest[2] = 0.18f;
+            tundra[0] = 0.45f; tundra[1] = 0.40f; tundra[2] = 0.25f;
+            dirt[0] = 0.50f; dirt[1] = 0.40f; dirt[2] = 0.30f;
             snow[0] = 0.9f; snow[1] = 0.85f; snow[2] = 0.8f;
             lake[0] = 0.05f; lake[1] = 0.35f; lake[2] = 0.55f;
-            snow_offset = 200;
+            snow_offset = 250;
             break;
         // Winter
         case 4:
-            forest[0] = 0.4f; forest[1] = 0.5f; forest[2] = 0.4f;
+            forest[0] = 0.5f; forest[1] = 0.55f; forest[2] = 0.5f;
             tundra[0] = 0.9f; tundra[1] = 0.9f; tundra[2] = 0.9f;
             dirt[0] = 0.85f; dirt[1] = 0.85f; dirt[2] = 0.85f;
             snow[0] = 0.85f; snow[1] = 0.85f; snow[2] = 0.85f;
-            lake[0] = 0.7f; lake[1] = 0.9f; lake[2] = 1;
+            lake[0] = 0.8f; lake[1] = 0.95f; lake[2] = 1.0f;
             snow_offset = -100;
             break;
         default:
@@ -79,41 +79,76 @@ static void getColor(const int index) {
             break;
     }
 
-    if (vertices[indices[index]].avg_elevation <= 3000.0f) {
-        // Below 3000, use dark forest green
+    const float elevation = vertices[indices[index]].avg_elevation;
+    const float slope_angle = vertices[indices[index]].slope_angle;
+    const float slope_aspect = vertices[indices[index]].slope_aspect;
+    if (elevation <= 3150.0f) {
+        // Below 3150, use forest
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] = forest[j];
             }
         }
-    } else if (vertices[indices[index]].avg_elevation >= 3700.0f) {
-        // Above 3700, use dirt
-        for (int i = index; i < index+3; i++) {
-            for (int j = 0; j < 3; j++) {
-                vertices[indices[i]].rgb[j] = dirt[j];
-            }
-        }
-    } else if (vertices[indices[index]].avg_elevation < 3300.0f) {
-        // Smooth transition between forest and tundra (3000 to 3300)
-        t = (vertices[indices[index]].avg_elevation - 3000.0f) / 300.0f;
+    }
+    else if (elevation < 3250.0f) {
+        // Smooth transition between forest and tundra (3150 to 3250)
+        t = (elevation - 3150.0f) / 100.0f;
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] = (1-t)*forest[j] + t*tundra[j];
             }
         }
-    } else {
-        // Smooth transition between tundra and dirt (3300 to 3700)
-        t = (vertices[indices[index]].avg_elevation - 3300.0f) / 400.0f;
+    }
+    else if (elevation < 3400.0f) {
+        // From 3250 to 3400, use tundra
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = tundra[j];
+            }
+        }
+    }
+    else if (elevation < 3550.0f){
+        // Smooth transition between tundra and dirt (3400 to 3550)
+        t = (elevation - 3400.0f) / 150.0f;
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] = (1-t)*tundra[j] + t*dirt[j];
             }
         }
     }
+    else {
+        // Above 3550, use dirt
+        for (int i = index; i < index+3; i++) {
+            for (int j = 0; j < 3; j++) {
+                vertices[indices[i]].rgb[j] = dirt[j];
+            }
+        }
+    }
+
+    // Steeper slopes should be dirt and stone
+    if (slope_angle > 50) {
+        if (elevation < 3400) {
+            // Below 3400, use dirt
+            for (int i = index; i < index+3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    vertices[indices[i]].rgb[j] = dirt[j];
+                }
+            }
+        } else {
+            t = (slope_angle - 50) / 20.0f;
+            t = (t > 1.0f) ? 1.0f : t;
+            // Above 3400, use more stone the steeper the slope is
+            for (int i = index; i < index+3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    vertices[indices[i]].rgb[j] = (1-t)*vertices[indices[i]].rgb[j] + t*stone[j];
+                }
+            }
+        }
+    }
 
     // Darken steeper slopes
-    if (vertices[indices[index]].slope_angle > 30) {
-        const float darkeningFactor = 1.0f - ((vertices[indices[index]].slope_angle - 30) / (season==4?60.0f:90.0f));
+    if (slope_angle > 30) {
+        const float darkeningFactor = 1.0f - ((slope_angle - 30) / (season==4?120.0f:100.0f));
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] *= darkeningFactor;
@@ -122,18 +157,33 @@ static void getColor(const int index) {
     }
 
     // Snow
-    if (vertices[indices[index]].slope_angle < 55 &&
-        (vertices[indices[index]].slope_aspect > 270 || vertices[indices[index]].slope_aspect < 90 // North facing
-        || vertices[indices[index]].avg_elevation > 3700+snow_offset)) {
-
-        if (vertices[indices[index]].avg_elevation > 3350+snow_offset) { // If north facing and above 3350 or south facing above 3700
-            // Smooth transition between dirt/stone and snow (3700 to 3800)
-            // t = (vertices[indices[index]].avg_elevation - 3350.0f) / 100.0f;
-            // for (int i = index; i < index+3; i++) {
-            //     for (int j = 0; j < 3; j++) {
-            //         vertices[indices[i]].rgb[j] = (1-t)*dirt[j] + t*snow[j];
-            //     }
-            // }
+    if (slope_angle < 60) { // No snow on very steep slopes
+        if (slope_aspect > 270 || slope_aspect < 90) { // North Facing
+            if (elevation > 3400+snow_offset) {
+                // Smooth transition to snow (3400 to 3450)
+                t = (elevation - (float)(3400+snow_offset)) / 50.0f;
+                for (int i = index; i < index+3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        vertices[indices[i]].rgb[j] = (1-t)*vertices[indices[i]].rgb[j] + t*snow[j];
+                    }
+                }
+            } else if (elevation > 3450+snow_offset) {
+                for (int i = index; i < index+3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        vertices[indices[i]].rgb[j] = snow[j];
+                    }
+                }
+            }
+        } else if (elevation > 3700+snow_offset) { // South Facing
+            // Smooth transition to snow (3700 to 3750)
+            t = (elevation - (float)(3700+snow_offset)) / 50.0f;
+            for (int i = index; i < index+3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    vertices[indices[i]].rgb[j] = (1-t)*vertices[indices[i]].rgb[j] + t*snow[j];
+                }
+            }
+        } else if (elevation > 3750+snow_offset) {
+            // Above 3750, use snow
             for (int i = index; i < index+3; i++) {
                 for (int j = 0; j < 3; j++) {
                     vertices[indices[i]].rgb[j] = snow[j];
