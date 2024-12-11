@@ -202,34 +202,27 @@ static void getColor(const int index) {
     }
 }
 
+
 /*
- * Read in elevation data from the .dem files, and populate the vertices array.
+ *  Read 1 meter DEM from the corresponding file and calculate the color and normals.
  */
-static void readFile(const char *fileName, int start, int end) {
+void ReadDEM(const char *fileName) {
+    /* Read in elevation data from the .dem file, and populate the vertices array.*/
     FILE *file = fopen(fileName, "r");
     if (!file) Fatal("Cannot open file %s\n", fileName);
     float fy;
-    for (int i = start; i < end; i++) {
+    for (int i = 0; i < DEM_W*DEM_W; i++) {
         if (fscanf(file, "%f", &fy) != 1) Fatal("Error reading file %s\n", fileName);
         if ((i/DEM_W)%DEM_R == 0 && (i%DEM_W) % DEM_R == 0) {
             int index = ((i/DEM_W)/DEM_R) * (DEM_W/DEM_R) + (i%DEM_W)/DEM_R;
             if (index < (DEM_W/DEM_R)*(DEM_W/DEM_R)) {
-                vertices[index].x = i/DEM_W - DEM_W/2;
+                vertices[index].x = 4*(i/DEM_W - DEM_W/2);
                 vertices[index].y = fy - 3100;
-                vertices[index].z = i%DEM_W - DEM_W/2;
+                vertices[index].z = 4*(i%DEM_W - DEM_W/2);
             }
         }
     }
     fclose(file);
-}
-
-/*
- *  Read 1 meter DEM from the 2 corresponding files and calculate the color and normals.
- */
-void ReadDEM(const char *file1, const char *file2) {
-    /* Read in data from files */
-    readFile(file1,0,DEM_W*DEM_W/2);
-    readFile(file2,DEM_W*DEM_W/2,DEM_W*DEM_W);
 
     /* Populate indices array */
     int n = 0;
