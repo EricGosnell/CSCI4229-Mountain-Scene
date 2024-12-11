@@ -332,6 +332,7 @@ static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
     dt = fmod(t, 360);
     l_th = fmod(t*30,360);
+    //set season
     double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
         season = 1;
@@ -381,8 +382,10 @@ int main(int argc,char* argv[]) {
 
     // Load DEM
     ReadDEM("cirque1.dem","cirque2.dem");
-    sky[0] = LoadTexBMP("skytest.bmp");
-    sky[1] = LoadTexBMP("skytest2.bmp");
+
+    //load sky box textures
+    sky[0] = LoadTexBMP("sky1.bmp");
+    sky[1] = LoadTexBMP("sky2.bmp");
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();

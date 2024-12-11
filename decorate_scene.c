@@ -1,6 +1,8 @@
 #include "CSCIx229.h"
 
-
+/*
+* Generates sky box. Function taken from Vlakkies' Ex 8, bmp is hand drawn by me
+*/
 void Sky(double D, double th) {
     //  Textured white box dimension (-D,+D)
     glPushMatrix();
@@ -51,8 +53,11 @@ void Sky(double D, double th) {
     glDisable(GL_TEXTURE_2D);
     glPopMatrix();
 }
-
+/*
+* Places pine trees and aspens in scene
+*/
 void forest() {
+    //arrays of tree coords
     float pineCoords[27][3] = {
         // Flat Area
         {-187,-30,688},
@@ -97,13 +102,13 @@ void forest() {
         {283,60,788},
     };
 
-
+    //loops through coords and places trees
     for (int i=0; i<sizeof(pineCoords)/sizeof(pineCoords[0]); i++) {
         if (frustumCulling(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2])) {
             PineTree(pineCoords[i][0],pineCoords[i][1],pineCoords[i][2],200,300,200);
         }
     }
-
+    //loops through coords and places trees
     for (int i=0; i<sizeof(aspenCoords)/sizeof(aspenCoords[0]); i++) {
         if (frustumCulling(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2])) {
             aspenTree(aspenCoords[i][0],aspenCoords[i][1],aspenCoords[i][2],100,100,100);
@@ -111,7 +116,9 @@ void forest() {
     }
 }
 
-
+/*
+* Generates animals
+*/
 void releaseTheAnimals() {
     blackBear(-315,50,613,20,20,20,50);
     blackBear(-217,25,642,15,15,15,80);
