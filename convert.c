@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
     // Write the values in the required format
     int count = 0;
     printf("\nWriting output data...\n");
-    for (int i = 0; i < grid_size; i+=4) {
-        for (int j = 0; j < grid_size; j+=4) {
+    for (int i = 0; i < grid_size; i+=2) {
+        for (int j = 0; j < grid_size; j+=2) {
             if (count < grid_size*grid_size/2) fprintf(output1, "%.2f\n", data[i][j]);
             else fprintf(output2, "%.2f\n", data[i][j]);
             count++;

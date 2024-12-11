@@ -344,7 +344,7 @@ int main(int argc,char* argv[]) {
     glutIdleFunc(idle);
 
     // Load DEM
-    ReadDEM("cirque.dem");
+    ReadDEM("cirque_2m.dem");
     //sky box textures
     sky[0] = LoadTexBMP("sky1.bmp");
     sky[1] = LoadTexBMP("sky2.bmp");

@@ -1,8 +1,8 @@
 #include "CSCIx229.h"
 
 /* Global Variables */
-vtx vertices[1048576]; // Vertex list
-unsigned int indices[6291456]; // 3 indices per triangle
+vtx vertices[4194304]; // Vertex list
+unsigned int indices[25165824]; // 3 indices per triangle
 int dem_season = 0; // Current season state
 
 
@@ -209,9 +209,9 @@ void ReadDEM(const char *fileName) {
         if ((i/DEM_W)%DEM_R == 0 && (i%DEM_W) % DEM_R == 0) {
             int index = ((i/DEM_W)/DEM_R) * (DEM_W/DEM_R) + (i%DEM_W)/DEM_R;
             if (index < (DEM_W/DEM_R)*(DEM_W/DEM_R)) {
-                vertices[index].x = 4*(i/DEM_W - DEM_W/2);
+                vertices[index].x = 2*(i/DEM_W - DEM_W/2);
                 vertices[index].y = fy - 3100;
-                vertices[index].z = 4*(i%DEM_W - DEM_W/2);
+                vertices[index].z = 2*(i%DEM_W - DEM_W/2);
             }
         }
     }

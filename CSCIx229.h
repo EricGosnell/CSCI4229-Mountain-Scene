@@ -82,7 +82,7 @@ void forest();
 void releaseTheAnimals();
 int frustumCulling(double x, double y, double z);
 
-#define DEM_W 1024 // Width of the DEM
+#define DEM_W 2048 // Width of the DEM
 #define DEM_R 1 // Factor by which to reduce resolution
 
 typedef struct {
@@ -94,8 +94,8 @@ typedef struct {
     float avg_elevation;
 } vtx; // Triangle used in drawing the terrain
 
-extern vtx vertices[1048576];
-extern unsigned int indices[6291456];
+extern vtx vertices[4194304];
+extern unsigned int indices[25165824];
 extern int polygon_count;
 extern double E[3];
 extern double C[3];
