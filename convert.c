@@ -10,16 +10,16 @@
  * This file processes this format to produce grid_size^2 rows elevations in meters.
  * This is then passed to the readDEM function, and values such as top left coordinates, resolution, and grid size are
  * manually added to the corresponding DEM struct.
- * 
- * Usage: ./convert <input_file.dem> <output_file1.dem> <output_file2.dem> <grid_size>
+ *
+ * Usage: ./convert <input_file.dem> <output_file.dem> <grid_size>
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char *argv[]) {
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s <input_file> <output_file1> <output_file2> <grid_size>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <input_file> <output_file> <grid_size>\n", argv[0]);
         return 1;
     }
 
@@ -29,21 +29,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    FILE *output1 = fopen(argv[2], "w");
-    if (output1 == NULL) {
+    FILE *output = fopen(argv[2], "w");
+    if (output == NULL) {
         perror("Error opening output file");
         fclose(input);
         return 1;
     }
 
-    FILE *output2 = fopen(argv[3], "w");
-    if (output2 == NULL) {
-        perror("Error opening output file");
-        fclose(input);
-        return 1;
-    }
 
-    int grid_size = atoi(argv[4]);
+    int grid_size = atoi(argv[3]);
     if (grid_size <= 0) {
         fprintf(stderr, "Grid size must be a positive integer!\n");
         return 1;
@@ -76,15 +70,13 @@ int main(int argc, char *argv[]) {
     printf("\nWriting output data...\n");
     for (int i = 0; i < grid_size; i+=2) {
         for (int j = 0; j < grid_size; j+=2) {
-            if (count < grid_size*grid_size/2) fprintf(output1, "%.2f\n", data[i][j]);
-            else fprintf(output2, "%.2f\n", data[i][j]);
+            fprintf(output, "%.2f\n", data[i][j]);
             count++;
         }
         printf("\r %.2f%%", (float)(i+1)/grid_size*100);
     }
 
-    fclose(output1);
-    fclose(output2);
+    fclose(output);
 
     // Free dynamically allocated memory
     for (int i = 0; i < grid_size; i++) {
@@ -92,6 +84,6 @@ int main(int argc, char *argv[]) {
     }
     free(data);
 
-    printf("\nOutput written to %s and %s\n", argv[2], argv[3]);
+    printf("\nOutput written to %s\n", argv[2]);
     return 0;
 }
