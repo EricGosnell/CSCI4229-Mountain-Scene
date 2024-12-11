@@ -44,20 +44,23 @@ int season = 0;         // 1: Spring, 2: Summer, 3: Autumn, 4: Winter
 int sky[2];             // Sky textures
 
 
+/*
+ * Perform frustum culling to remove objects at (x,y,z) if they are outside the view window.
+ */
 int frustumCulling(double x, double y, double z) {
     double F[3]; // Forward Vector F = C - E
     for (int i=0; i<3; i++) {
         F[i] = (C[i]-E[i]);
     }
     // Normalize the forward vector
-    const float f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
+    const double f_len = sqrt(F[0]*F[0]+F[1]*F[1]+F[2]*F[2]);
     for (int i=0; i<3; i++) {
         F[i] /= f_len;
     }
     // If it is close to the camera, include it regardless
-    double distance = sqrt((E[0]-x)*(E[0]-x)+(E[2]-z)*(E[2]-z));
+    const double distance = sqrt((E[0]-x)*(E[0]-x)+(E[2]-z)*(E[2]-z));
     if (distance < 200) return 1;
-    // Do not include point if it is outside the view window
+    // Do not include the object if it is outside the view window
     if (F[0]*(x - E[0]) + F[1]*(y - E[1]) + F[2]*(z - E[2]) < 180) return 0;
     return 1;
 }
@@ -80,9 +83,8 @@ void display() {
     C[2] = E[2] + dim*sin(th*3.1415926/180); // Fz = Cz - Ez = sin(th)
     gluLookAt(E[0],E[1],E[2], C[0],C[1],C[2], 0,1,0);
 
-    /* Set lighting values and create light source */
+    /* Set lighting values and create light source. Credit: Vlakkies */
     glShadeModel(GL_SMOOTH);
-    // glShadeModel(GL_FLAT);
     //  Translate intensity to color vectors
     float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
     float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
@@ -90,7 +92,7 @@ void display() {
     //  Light position
     float Position[]  = {distance*Cos(l_th),l_ph,distance*Sin(l_th),1.0};
     //  Draw light position as ball (still no lighting here)
-     //  White ball with yellow specular
+    //  White ball with yellow specular
     float yellow[]   = {1.0,1.0,0.0,1.0};
     float Emission[] = {0.0,0.0,0.01*emission,1.0};
     glMaterialf(GL_FRONT,GL_SHININESS,shiny);
@@ -114,13 +116,13 @@ void display() {
     glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
     glLightfv(GL_LIGHT0,GL_POSITION,Position);
 
-    /* Draw skybox */
+    /* Draw skybox without lighting */
     glDisable(GL_LIGHTING);
     Sky(5*dim,dt);
     glEnable(GL_LIGHTING);
 
-    /* Draw Digital Elevation Models */
-    DrawDEM(1);
+    /* Draw digital elevation model */
+    DrawDEM();
 
     /* Draw forest */
     forest();
@@ -153,10 +155,10 @@ void display() {
  *  GLUT calls this routine when an arrow key is pressed
  */
 void special(int key,int x,int y) {
-    //  Right arrow key - increase angle by 5 degrees
+    //  Right arrow key - increase angle by 3 degrees
     if (key == GLUT_KEY_RIGHT)
         th += 3;
-    //  Left arrow key - decrease angle by 5 degrees
+    //  Left arrow key - decrease angle by 3 degrees
     else if (key == GLUT_KEY_LEFT)
         th -= 3;
     //  Up arrow key - increase elevation by 5% of diem
@@ -276,6 +278,7 @@ void key(unsigned char ch,int x,int y) {
 
 /*
  *  GLUT calls this routine when the window is resized
+ *  Credit: Vlakkies
  */
 void reshape(int width,int height) {
     //  Ratio of the width to the height of the window
@@ -286,10 +289,13 @@ void reshape(int width,int height) {
     Project(60,asp,dim);
 }
 
+/*
+ * GLUT calls this routine when idle
+ */
 static void idle(void) {
     double t = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-    dt = fmod(t, 360);
-    l_th = fmod(t*30,360);
+    dt = fmod(t, 360); // Time step for skybox animation
+    l_th = (int)fmod(t*30,360); // Light source rotation
     //set season
     double seasonTime = fmod(t,60);
     if(seasonTime >= 0 && seasonTime < 15){
@@ -337,12 +343,12 @@ int main(int argc,char* argv[]) {
     glutKeyboardFunc(key);
     glutIdleFunc(idle);
 
-
     // Load DEM
     ReadDEM("cirque.dem");
     //sky box textures
     sky[0] = LoadTexBMP("sky1.bmp");
     sky[1] = LoadTexBMP("sky2.bmp");
+
     //  Pass control to GLUT so it can interact with the user
     ErrCheck("init");
     glutMainLoop();

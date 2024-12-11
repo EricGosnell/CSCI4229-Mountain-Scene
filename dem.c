@@ -3,16 +3,13 @@
 /* Global Variables */
 vtx vertices[1048576]; // Vertex list
 unsigned int indices[6291456]; // 3 indices per triangle
-int dem_season = 0;
+int dem_season = 0; // Current season state
 
 
 /*
  * Define the color of each triangle based on slope angle, slope aspect, and elevation. Linear interpolation
- * is used to transition between different zones, such as between tundra and exposed stone.
- *
- * TODO: explain all color transitions and values and update comments
+ * is used to transition between different zones, such as between tundra and dirt.
  */
-
 static void getColor(const int index) {
     float t; // Color interpolation value
 
@@ -89,8 +86,7 @@ static void getColor(const int index) {
                 vertices[indices[i]].rgb[j] = forest[j];
             }
         }
-    }
-    else if (elevation < 3250.0f) {
+    } else if (elevation < 3250.0f) {
         // Smooth transition between forest and tundra (3150 to 3250)
         t = (elevation - 3150.0f) / 100.0f;
         for (int i = index; i < index+3; i++) {
@@ -98,16 +94,14 @@ static void getColor(const int index) {
                 vertices[indices[i]].rgb[j] = (1-t)*forest[j] + t*tundra[j];
             }
         }
-    }
-    else if (elevation < 3400.0f) {
+    } else if (elevation < 3400.0f) {
         // From 3250 to 3400, use tundra
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
                 vertices[indices[i]].rgb[j] = tundra[j];
             }
         }
-    }
-    else if (elevation < 3550.0f){
+    } else if (elevation < 3550.0f){
         // Smooth transition between tundra and dirt (3400 to 3550)
         t = (elevation - 3400.0f) / 150.0f;
         for (int i = index; i < index+3; i++) {
@@ -115,8 +109,7 @@ static void getColor(const int index) {
                 vertices[indices[i]].rgb[j] = (1-t)*tundra[j] + t*dirt[j];
             }
         }
-    }
-    else {
+    } else {
         // Above 3550, use dirt
         for (int i = index; i < index+3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -125,7 +118,7 @@ static void getColor(const int index) {
         }
     }
 
-    // Steeper slopes should be dirt and stone
+    // Steeper slopes cannot support grass
     if (slope_angle > 50) {
         if (elevation < 3400) {
             // Below 3400, use dirt
@@ -301,10 +294,10 @@ void ReadDEM(const char *fileName) {
 }
 
 /*
- *  Draw 1 meter DEM Wireframe
+ *  Draw 1 meter DEM
  */
-void DrawDEM(const double scale) {
-    // Update DEM if season has changed
+void DrawDEM() {
+    // Update VBO if season has changed
     if (season != dem_season) {
         dem_season = season;
         for (int i = 0; i < sizeof(indices) / sizeof(unsigned int); i += 3) {
@@ -314,9 +307,8 @@ void DrawDEM(const double scale) {
     }
     // Save transformation
     glPushMatrix();
-    // Translate and scale
-    // TODO: may need to be reversed now that the DEM is centered at the origin
-    glScaled(scale,scale*1.25,scale);
+    // Vertically scale by 1.25
+    glScaled(1,1.25,1);
 
     // Set Color Properties
     const float black[] = {0, 0, 0, 1};
@@ -330,7 +322,7 @@ void DrawDEM(const double scale) {
 
     // Draw Elements
     glDrawElements(GL_TRIANGLES,sizeof(indices)/sizeof(unsigned int),GL_UNSIGNED_INT,0);
-    polygon_count += 8388608;
+    polygon_count += DEM_W*DEM_W*2;
 
     // Undo transformations
     glPopMatrix();
